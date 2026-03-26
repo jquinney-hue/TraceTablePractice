@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Trace Tables — GCSE Computer Science</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- jsPDF for Report Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
     --bg: #f4f7f8;
@@ -41,10 +44,18 @@
   .site-header {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    justify-content: space-between;
     margin-bottom: 2rem;
     border-bottom: 3px solid var(--accent);
     padding-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
   }
 
   .logo {
@@ -54,7 +65,7 @@
 
   h1 { margin: 0; font-size: 2.2rem; color: var(--accent-dark); }
   h2 { margin-top: 0; color: var(--accent); font-weight: 500;}
-  p { color: var(--text-dim); }
+  p { margin: 0; color: var(--text-dim); }
 
   /* Navigation Tabs */
   .tabs { 
@@ -91,20 +102,51 @@
   .btn {
     background: var(--surface); color: var(--text); border: 1px solid var(--border);
     padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-family: var(--sans);
-    font-weight: 500; transition: 0.2s;
+    font-weight: 500; transition: 0.2s; font-size: 1rem;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
+  select.btn { padding-right: 2rem; }
   .btn:hover { background: var(--surface2); border-color: var(--accent); }
   .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary { background: var(--accent); color: #fff; border: none; box-shadow: 0 2px 4px rgba(37,150,190,0.2); }
   .btn-primary:hover { background: var(--accent-dark); }
+  .btn-report { background: var(--correct); color: #fff; border: none; box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2); }
+  .btn-report:hover { background: #219653; }
 
   .controls { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .controls-spaced { justify-content: space-between; align-items: center; }
+  .controls-group { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center;}
+  
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
   @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
 
   .mt-4 { margin-top: 1rem; }
   .mb-4 { margin-bottom: 1rem; }
+
+  /* Stats Badge */
+  .stat-badge {
+    background: var(--surface2);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    color: var(--accent-dark);
+    font-weight: bold;
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* Context Boxes */
+  .context-box {
+    background: var(--surface2);
+    border-left: 4px solid var(--accent);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    color: var(--text);
+    font-style: italic;
+  }
+  .context-box strong { color: var(--accent-dark); font-weight: bold; }
 
   /* Code Blocks */
   .code-container {
@@ -150,7 +192,6 @@
   /* Validation Styles */
   .trace-table td.correct { background: rgba(39, 174, 96, 0.15); box-shadow: inset 0 0 0 2px var(--correct); }
   .trace-table td.wrong { background: rgba(179, 26, 28, 0.15); box-shadow: inset 0 0 0 2px var(--wrong); }
-  .trace-table td.correct-show { /* Blank extra rows don't need a heavy green background */ }
 
   .prac-area { display: none; }
   .prac-area.active { display: block; }
@@ -166,17 +207,52 @@
   .info-list { margin-top: 1rem; padding-left: 1.5rem; }
   .info-list li { margin-bottom: 0.8rem; }
   .info-list strong { color: var(--accent); }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(44, 62, 80, 0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease-in-out;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  
+  .modal-content {
+    background: var(--surface); padding: 2rem; border-radius: 12px;
+    width: 90%; max-width: 420px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    transform: translateY(-20px); transition: transform 0.3s ease-in-out;
+  }
+  .modal-overlay.show .modal-content { transform: translateY(0); }
+  .modal-content h3 { margin-top: 0; color: var(--accent-dark); font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .modal-content p { margin-bottom: 1.5rem; }
+  
+  .input-group { margin-bottom: 1rem; }
+  .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text); }
+  .input-group input { 
+    width: 100%; padding: 0.8rem; border: 1px solid var(--border); 
+    border-radius: 6px; font-family: var(--sans); font-size: 1rem;
+    box-sizing: border-box; transition: 0.2s;
+  }
+  .input-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,150,190,0.2); }
+  
+  .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+  .error-msg { color: var(--wrong); font-size: 0.9rem; margin-top: 0.5rem; display: none; font-weight: 500; }
 </style>
 </head>
 <body>
 
 <div class="container">
   <header class="site-header">
-    <img src="https://cdn.realsmart.co.uk/889bf1be8ce96e4bba59050105a99df2/uploads/2019/03/JHNCC-Crest-Outlined.png" alt="School Logo" class="logo">
-    <div>
-      <h1>Trace Tables</h1>
-      <p>Master algorithm tracing for your Computer Science exams</p>
+    <div class="header-left">
+      <img src="https://cdn.realsmart.co.uk/889bf1be8ce96e4bba59050105a99df2/uploads/2019/03/JHNCC-Crest-Outlined.png" alt="School Logo" class="logo">
+      <div>
+        <h1>Trace Tables</h1>
+        <p>Master algorithm tracing for your Computer Science exams</p>
+      </div>
     </div>
+    <button class="btn btn-report" onclick="openReportModal()">📄 Generate Report</button>
   </header>
 
   <!-- Navigation Tabs -->
@@ -209,6 +285,7 @@
     </div>
     <div class="grid">
       <div>
+        <div id="walk-context" class="context-box"></div>
         <div id="walk-code" class="code-container"></div>
         <div class="controls mt-4">
           <button class="btn btn-primary" onclick="stepWalk()">Step Forward</button>
@@ -227,7 +304,7 @@
   <!-- Page 3: Practice -->
   <div id="page-prac" class="page">
     <h2>Practice Tracing</h2>
-    <p>Fill in the tables below. Leave cells blank if the variable doesn't change on that specific line.</p>
+    <p>Fill in the tables below. Leave cells blank if the variable doesn't change on that specific line. Progress is automatically saved.</p>
     
     <div class="controls mb-4">
        <button class="btn active" onclick="showPrac(0, this)">Practice 1</button>
@@ -238,7 +315,10 @@
     <!-- Sub-page: Practice 0 -->
     <div id="prac0-area" class="prac-area active">
       <div class="grid">
-        <div id="prac0-code" class="code-container"></div>
+        <div>
+          <div id="prac0-context" class="context-box"></div>
+          <div id="prac0-code" class="code-container"></div>
+        </div>
         <div>
           <div id="prac0-table-wrap"></div>
           <button class="btn btn-primary mt-4" onclick="checkPractice(0)">Check Answers</button>
@@ -250,7 +330,10 @@
     <!-- Sub-page: Practice 1 -->
     <div id="prac1-area" class="prac-area">
       <div class="grid">
-        <div id="prac1-code" class="code-container"></div>
+        <div>
+          <div id="prac1-context" class="context-box"></div>
+          <div id="prac1-code" class="code-container"></div>
+        </div>
         <div>
           <div id="prac1-table-wrap"></div>
           <button class="btn btn-primary mt-4" onclick="checkPractice(1)">Check Answers</button>
@@ -262,7 +345,10 @@
     <!-- Sub-page: Practice 2 -->
     <div id="prac2-area" class="prac-area">
       <div class="grid">
-        <div id="prac2-code" class="code-container"></div>
+        <div>
+          <div id="prac2-context" class="context-box"></div>
+          <div id="prac2-code" class="code-container"></div>
+        </div>
         <div>
           <div id="prac2-table-wrap"></div>
           <button class="btn btn-primary mt-4" onclick="checkPractice(2)">Check Answers</button>
@@ -275,15 +361,26 @@
   <!-- Page 4: Generator -->
   <div id="page-gen" class="page">
     <h2>Infinite Practice Generator</h2>
-    <p>Automatically generates random pseudocode snippets for you to trace.</p>
+    <p>Procedurally generates code traces to practice. Increases in complexity with Master difficulty scaling to your score.</p>
     
+    <div class="controls controls-spaced mb-4">
+      <div class="controls-group">
+        <select id="gen-difficulty" class="btn" onchange="resetGeneratedPractice(true)">
+          <option value="easy">Easy (0 Inputs)</option>
+          <option value="medium">Medium (1 Input)</option>
+          <option value="hard">Hard (2 Inputs)</option>
+          <option value="master">Master (Dynamic)</option>
+        </select>
+        <button class="btn btn-primary" onclick="resetGeneratedPractice(true)">Generate New Question</button>
+      </div>
+      <div id="gen-stats-display" class="stat-badge">Score: 0 | Streak: 0 | Max Streak: 0</div>
+    </div>
+
     <div class="grid">
       <div>
+        <div id="gen-context" class="context-box"></div>
         <div id="gen-code" class="code-container"></div>
-        <div class="controls mt-4">
-          <button class="btn btn-primary" onclick="checkGeneratedPractice()">Check Answers</button>
-          <button class="btn" onclick="resetGeneratedPractice()">Generate New Question</button>
-        </div>
+        <button class="btn btn-primary mt-4" onclick="checkGeneratedPractice()">Check Answers</button>
       </div>
       <div>
         <div id="gen-table-wrap"></div>
@@ -294,6 +391,31 @@
 
 </div>
 
+<!-- Custom Report Modal -->
+<div id="report-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>Student Details</h3>
+    <p>Please enter your full name to generate the report.</p>
+    
+    <div class="input-group">
+      <label for="student-fname">First Name</label>
+      <input type="text" id="student-fname" placeholder="e.g. Jane">
+    </div>
+    
+    <div class="input-group">
+      <label for="student-lname">Last Name</label>
+      <input type="text" id="student-lname" placeholder="e.g. Doe">
+    </div>
+    
+    <div id="modal-error" class="error-msg">Both First Name and Last Name are required.</div>
+    
+    <div class="modal-actions">
+      <button class="btn" onclick="closeReportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitReportModal()">Generate PDF</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ======================================================
 // CONSTANTS & DATA
@@ -301,32 +423,36 @@
 const EXTRA_ROWS = 2;
 
 // Algorithm 0: For Loop Accumulator
+const algo0Context = "The user ran the program and typed <strong>3</strong> when prompted for the maximum number.";
 const algo0Lines = [
+  "limit = input(\"Enter limit:\")",
   "total = 0",
-  "for i = 1 to 3",
+  "for i = 1 to limit",
   "  total = total + i",
   "next i",
   "print total"
 ];
-const algo0Cols = ['Line', 'i', 'total', 'Output'];
+const algo0Cols = ['Line', 'limit', 'total', 'i', 'Output'];
 const algo0Answers = [
-  {Line: '1', i: '', total: '0', Output: ''},
-  {Line: '2', i: '1', total: '', Output: ''},
-  {Line: '3', i: '', total: '1', Output: ''},
-  {Line: '4', i: '', total: '', Output: ''},
-  {Line: '2', i: '2', total: '', Output: ''},
-  {Line: '3', i: '', total: '3', Output: ''},
-  {Line: '4', i: '', total: '', Output: ''},
-  {Line: '2', i: '3', total: '', Output: ''},
-  {Line: '3', i: '', total: '6', Output: ''},
-  {Line: '4', i: '', total: '', Output: ''},
-  {Line: '2', i: '', total: '', Output: ''}, // loop condition fails
-  {Line: '5', i: '', total: '', Output: '6'}
+  {Line: '1', limit: '3', total: '', i: '', Output: ''},
+  {Line: '2', limit: '', total: '0', i: '', Output: ''},
+  {Line: '3', limit: '', total: '', i: '1', Output: ''},
+  {Line: '4', limit: '', total: '1', i: '', Output: ''},
+  {Line: '5', limit: '', total: '', i: '', Output: ''},
+  {Line: '3', limit: '', total: '', i: '2', Output: ''},
+  {Line: '4', limit: '', total: '3', i: '', Output: ''},
+  {Line: '5', limit: '', total: '', i: '', Output: ''},
+  {Line: '3', limit: '', total: '', i: '3', Output: ''},
+  {Line: '4', limit: '', total: '6', i: '', Output: ''},
+  {Line: '5', limit: '', total: '', i: '', Output: ''},
+  {Line: '3', limit: '', total: '', i: '', Output: ''}, // loop condition fails
+  {Line: '6', limit: '', total: '', i: '', Output: '6'}
 ];
 
 // Algorithm 1: While Loop Countdown
+const algo1Context = "The program asks the user for a starting number, and they type <strong>10</strong>.";
 const algo1Lines = [
-  "x = 10",
+  "x = input(\"Enter start number:\")",
   "while x > 5",
   "  print x",
   "  x = x - 2",
@@ -353,8 +479,9 @@ const algo1Answers = [
 ];
 
 // Algorithm 2: Conditional Inside Loop
+const algo2Context = "When prompted for a base value, the user enters <strong>5</strong>.";
 const algo2Lines = [
-  "x = 5",
+  "x = input(\"Enter base value:\")",
   "for i = 1 to 3",
   "  if i > 1 then",
   "    x = x + i",
@@ -362,39 +489,116 @@ const algo2Lines = [
   "next i",
   "print x"
 ];
-const algo2Cols = ['Line', 'i', 'x', 'Output'];
+const algo2Cols = ['Line', 'x', 'i', 'Output'];
 const algo2Answers = [
-  {Line: '1', i: '', x: '5', Output: ''},
-  {Line: '2', i: '1', x: '', Output: ''},
-  {Line: '3', i: '', x: '', Output: ''}, // 1 > 1 False
-  {Line: '6', i: '', x: '', Output: ''},
-  {Line: '2', i: '2', x: '', Output: ''},
-  {Line: '3', i: '', x: '', Output: ''}, // 2 > 1 True
-  {Line: '4', i: '', x: '7', Output: ''},
-  {Line: '5', i: '', x: '', Output: ''},
-  {Line: '6', i: '', x: '', Output: ''},
-  {Line: '2', i: '3', x: '', Output: ''},
-  {Line: '3', i: '', x: '', Output: ''}, // 3 > 1 True
-  {Line: '4', i: '', x: '10', Output: ''},
-  {Line: '5', i: '', x: '', Output: ''},
-  {Line: '6', i: '', x: '', Output: ''},
-  {Line: '2', i: '', x: '', Output: ''}, // Loop fails
-  {Line: '7', i: '', x: '', Output: '10'}
+  {Line: '1', x: '5', i: '', Output: ''},
+  {Line: '2', x: '', i: '1', Output: ''},
+  {Line: '3', x: '', i: '', Output: ''}, // 1 > 1 False
+  {Line: '6', x: '', i: '', Output: ''},
+  {Line: '2', x: '', i: '2', Output: ''},
+  {Line: '3', x: '', i: '', Output: ''}, // 2 > 1 True
+  {Line: '4', x: '7', i: '', Output: ''},
+  {Line: '5', x: '', i: '', Output: ''},
+  {Line: '6', x: '', i: '', Output: ''},
+  {Line: '2', x: '', i: '3', Output: ''},
+  {Line: '3', x: '', i: '', Output: ''}, // 3 > 1 True
+  {Line: '4', x: '10', i: '', Output: ''},
+  {Line: '5', x: '', i: '', Output: ''},
+  {Line: '6', x: '', i: '', Output: ''},
+  {Line: '2', x: '', i: '', Output: ''}, // Loop fails
+  {Line: '7', x: '', i: '', Output: '10'}
 ];
 
-const allAlgos = [
-  { code: algo0Lines, cols: algo0Cols, answers: algo0Answers },
-  { code: algo1Lines, cols: algo1Cols, answers: algo1Answers },
-  { code: algo2Lines, cols: algo2Cols, answers: algo2Answers }
+const pracData = [
+  { context: algo0Context, code: algo0Lines, cols: algo0Cols, answers: algo0Answers },
+  { context: algo1Context, code: algo1Lines, cols: algo1Cols, answers: algo1Answers },
+  { context: algo2Context, code: algo2Lines, cols: algo2Cols, answers: algo2Answers }
 ];
-const pracData = allAlgos;
 
+// ======================================================
+// LOCAL STORAGE & PROGRESS TRACKING
+// ======================================================
+const TODAY_KEY = 'traceTableProgress_v3_' + new Date().toISOString().split('T')[0];
+let progressData = [];
+let genStats = { score: 0, streak: 0, maxStreak: 0 };
+let genQuestionIdCounter = 1;
+
+function initProgress() {
+  const stored = localStorage.getItem(TODAY_KEY);
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    progressData = parsed.questions || [];
+    genStats = parsed.stats || { score: 0, streak: 0, maxStreak: 0 };
+    
+    let maxGen = 0;
+    progressData.forEach(p => {
+      if (p.id.startsWith('gen')) {
+        let num = parseInt(p.id.replace('gen', ''));
+        if (num > maxGen) maxGen = num;
+      }
+    });
+    genQuestionIdCounter = maxGen + 1;
+  } else {
+    progressData = [
+      { id: 'prac0', title: 'Practice 1', attempts: 0, correct: false, tableData: null },
+      { id: 'prac1', title: 'Practice 2', attempts: 0, correct: false, tableData: null },
+      { id: 'prac2', title: 'Practice 3', attempts: 0, correct: false, tableData: null }
+    ];
+    saveProgress();
+  }
+  updateStatsUI();
+}
+
+function saveProgress() {
+  localStorage.setItem(TODAY_KEY, JSON.stringify({
+    questions: progressData,
+    stats: genStats
+  }));
+}
+
+function recordAttempt(id, title, isCorrect, tableData) {
+  let q = progressData.find(p => p.id === id);
+  if (!q) {
+    q = { id, title, attempts: 0, correct: false, tableData: null };
+    progressData.push(q);
+  }
+  q.attempts += 1;
+  q.correct = isCorrect; 
+  q.tableData = tableData;
+  saveProgress();
+}
+
+function updateStatsUI() {
+  const badge = document.getElementById('gen-stats-display');
+  badge.textContent = `Score: ${genStats.score} | Streak: ${genStats.streak} | Max Streak: ${genStats.maxStreak}`;
+}
+
+function extractTableData(prefix, cols, totalRows) {
+  let data = [];
+  for(let r = 0; r < totalRows; r++) {
+    let rowData = [];
+    cols.forEach(c => {
+      let td = document.getElementById(`${prefix}-r${r}-${c}`);
+      rowData.push(td && td.querySelector('input') ? td.querySelector('input').value : '');
+    });
+    data.push(rowData);
+  }
+  return { headers: cols, rows: data };
+}
+
+function restoreTableState(prefix, tableData) {
+  if (!tableData || !tableData.rows) return;
+  for (let r = 0; r < tableData.rows.length; r++) {
+    for (let c = 0; c < tableData.headers.length; c++) {
+      let td = document.getElementById(`${prefix}-r${r}-${tableData.headers[c]}`);
+      if (td && td.querySelector('input')) td.querySelector('input').value = tableData.rows[r][c] || '';
+    }
+  }
+}
 
 // ======================================================
 // NAVIGATION / UI LOGIC
 // ======================================================
-
-// [FIX 1] Removed implicit reliance on window.event, replaced with explict `btn` parameter
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -410,32 +614,19 @@ function showPrac(idx, btn) {
 }
 
 function renderPracticeCode(containerId, lines) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = lines.map((ln, i) => `
-    <div class="code-line">
-      <span class="line-num">${i + 1}</span>
-      <span class="line-code">${ln}</span>
-    </div>`).join('');
+  document.getElementById(containerId).innerHTML = lines.map((ln, i) => `
+    <div class="code-line"><span class="line-num">${i + 1}</span><span class="line-code">${ln}</span></div>`).join('');
 }
 
 function buildStudentTableHtml(containerId, prefix, cols, answers) {
-  const el = document.getElementById(containerId);
   const totalRows = answers.length + EXTRA_ROWS;
-  let html = `<table class="trace-table"><thead><tr>`;
-  cols.forEach(c => html += `<th>${c}</th>`);
-  html += `</tr></thead><tbody>`;
-
+  let html = `<table class="trace-table"><thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
   for(let r = 0; r < totalRows; r++) {
-     html += `<tr>`;
-     cols.forEach(c => {
-        html += `<td id="${prefix}-r${r}-${c}"><input type="text" autocomplete="off"></td>`;
-     });
-     html += `</tr>`;
+     html += `<tr>${cols.map(c => `<td id="${prefix}-r${r}-${c}"><input type="text" autocomplete="off"></td>`).join('')}</tr>`;
   }
   html += `</tbody></table>`;
-  el.innerHTML = html;
+  document.getElementById(containerId).innerHTML = html;
 }
-
 
 // ======================================================
 // WALKTHROUGH LOGIC
@@ -445,7 +636,6 @@ let walkStep = 0;
 
 function selectWalkAlgo(idx, btn) {
    currentWalkIdx = idx;
-   // [FIX 1] Safely apply active state
    document.querySelectorAll('#page-walk .controls .btn').forEach(b => b.classList.remove('active'));
    if(btn) btn.classList.add('active');
    resetWalk();
@@ -453,42 +643,33 @@ function selectWalkAlgo(idx, btn) {
 
 function resetWalk() {
    walkStep = 0;
-   const algo = allAlgos[currentWalkIdx];
+   const algo = pracData[currentWalkIdx];
+   document.getElementById('walk-context').innerHTML = algo.context;
    renderPracticeCode('walk-code', algo.code);
-   
-   const thead = document.getElementById('walk-thead');
-   thead.innerHTML = `<tr>${algo.cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+   document.getElementById('walk-thead').innerHTML = `<tr>${algo.cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
    document.getElementById('walk-tbody').innerHTML = '';
 }
 
 function stepWalk() {
-   const algo = allAlgos[currentWalkIdx];
-   if(walkStep >= algo.answers.length) return; // Sequence done
-   
+   const algo = pracData[currentWalkIdx];
+   if(walkStep >= algo.answers.length) return; 
    const stepData = algo.answers[walkStep];
    
-   // Apply Code Highlighting
    const lines = document.querySelectorAll('#walk-code .code-line');
    lines.forEach(l => l.classList.remove('active'));
-   const lineIdx = parseInt(stepData.Line) - 1;
-   if(lines[lineIdx]) lines[lineIdx].classList.add('active');
+   if(lines[parseInt(stepData.Line) - 1]) lines[parseInt(stepData.Line) - 1].classList.add('active');
    
-   // Construct new Table Row
-   const tbody = document.getElementById('walk-tbody');
    const tr = document.createElement('tr');
    algo.cols.forEach(c => {
      const td = document.createElement('td');
      td.textContent = stepData[c];
-     if (stepData[c] !== '') td.style.color = 'var(--correct)'; // Highlight new inserts
+     if (stepData[c] !== '') td.style.color = 'var(--correct)'; 
      tr.appendChild(td);
    });
-   tbody.appendChild(tr);
-   
-   // Scroll to bottom of table if needed
+   document.getElementById('walk-tbody').appendChild(tr);
    tr.scrollIntoView({ behavior: 'smooth', block: 'end' });
    walkStep++;
 }
-
 
 // ======================================================
 // STATIC PRACTICE LOGIC
@@ -496,125 +677,146 @@ function stepWalk() {
 function checkPractice(idx) {
   const data = pracData[idx];
   const prefix = `prac${idx}`;
-  // [FIX 3] Extend validation check up to totalRows to catch extra inputted rows
   const totalRows = data.answers.length + EXTRA_ROWS;
   let correct = 0; let total = 0;
 
   for(let r = 0; r < totalRows; r++) {
-    const row = data.answers[r] || {}; // Use empty object as truth for padding rows
-    
+    const row = data.answers[r] || {}; 
     data.cols.forEach(k => {
        const td = document.getElementById(`${prefix}-r${r}-${k}`);
        if(!td) return;
-       const input = td.querySelector('input');
        const expected = (row[k] || '').toString().trim().toLowerCase().replace(/\s+/g,' ');
-       const given = input.value.trim().toLowerCase().replace(/\s+/g,' ');
-
-       td.className = ''; // Reset
+       const given = td.querySelector('input').value.trim().toLowerCase().replace(/\s+/g,' ');
+       td.className = ''; 
        if(given === expected) {
          if(given !== '') td.classList.add('correct');
-         else td.classList.add('correct-show');
          correct++;
-       } else {
-         td.classList.add('wrong');
-       }
+       } else td.classList.add('wrong');
        total++;
     });
   }
 
-  // Display Feedback
+  const isCorrect = (correct === total);
+  recordAttempt(`prac${idx}`, `Practice ${idx + 1}`, isCorrect, extractTableData(prefix, data.cols, totalRows));
+
   const badge = document.getElementById(`${prefix}-result`);
-  badge.classList.add('show');
-  if(correct === total) {
-    badge.className = 'result-badge show pass';
-    badge.innerHTML = `✓ Perfect! ${correct}/${total} correct.`;
-  } else {
-    badge.className = 'result-badge show fail';
-    badge.innerHTML = `✗ ${correct}/${total} correct. Please review the highlighted red cells.`;
-  }
+  badge.className = `result-badge show ${isCorrect ? 'pass' : 'fail'}`;
+  badge.innerHTML = isCorrect ? `✓ Perfect! ${correct}/${total} correct.` : `✗ ${correct}/${total} correct. Please review the highlighted red cells.`;
 }
 
-
 // ======================================================
-// AUTO GENERATOR LOGIC
+// PROCEDURAL GENERATOR LOGIC (EASY/MED/HARD/MASTER)
 // ======================================================
 let genQuestion = null;
+const VAR_NAMES = ['a', 'b', 'c', 'd', 'e', 'f'];
 
-function generateForAccumulator() {
-  const ops = ['+', '*', '-'];
-  let op = ops[Math.floor(Math.random() * ops.length)];
-  const limit = Math.floor(Math.random() * 4) + 3; // 3 to 6
+function generateProceduralAlgorithm() {
+  const diff = document.getElementById('gen-difficulty').value;
+  let numVars = 2, numInputs = 0;
   
-  // [FIX 2] Prevent zero multiplier bug by forcing at least 1 when using *
-  let initVal = (op === '*') ? (Math.floor(Math.random() * 5) + 1) : Math.floor(Math.random() * 6);
-  
-  if (op === '*' && limit > 4) op = '+'; // Ensure numbers don't blow up too huge
-
-  const lines = [
-    `val = ${initVal}`,
-    `for k = 1 to ${limit}`,
-    `  val = val ${op} k`,
-    `next k`,
-    `print val`
-  ];
-
-  const cols = ['Line', 'k', 'val', 'Output'];
-  const answers = [];
-  answers.push({Line: '1', k: '', val: initVal.toString(), Output: ''});
-  
-  let currentVal = initVal;
-  for(let k = 1; k <= limit; k++) {
-    answers.push({Line: '2', k: k.toString(), val: '', Output: ''});
-    
-    if (op === '+') currentVal += k;
-    else if (op === '*') currentVal *= k;
-    else if (op === '-') currentVal -= k;
-    
-    answers.push({Line: '3', k: '', val: currentVal.toString(), Output: ''});
-    answers.push({Line: '4', k: '', val: '', Output: ''});
+  if (diff === 'easy') { numVars = 2; numInputs = 0; }
+  else if (diff === 'medium') { numVars = 2; numInputs = 1; }
+  else if (diff === 'hard') { numVars = 2; numInputs = 2; }
+  else if (diff === 'master') {
+      numVars = Math.min(6, 3 + Math.floor(genStats.score / 5)); // Scales up to 6 variables
+      numInputs = numVars; 
   }
-  answers.push({Line: '2', k: '', val: '', Output: ''}); // Fails loop condition
-  answers.push({Line: '5', k: '', val: '', Output: currentVal.toString()});
 
-  return { code: lines, cols, answers };
+  // Generate safe starting values (1 to 3) to prevent loop explosion
+  let startVals = [];
+  for(let i=0; i<numVars; i++) startVals.push(Math.floor(Math.random() * 3) + 1);
+
+  // Dry run to determine a perfect 'limit' that forces 3-4 loop iterations
+  let simVals = [...startVals];
+  let targetIterations = 3 + Math.floor(Math.random() * 2); 
+  for(let i=0; i<targetIterations; i++) {
+      for(let j=0; j<numVars-1; j++) simVals[j] += simVals[j+1];
+  }
+  let limit = simVals[0]; 
+
+  // Build Context & Code Lines
+  let contextParts = [];
+  let lines = [];
+  
+  for (let i=0; i<numVars; i++) {
+     if (i < numInputs) {
+         lines.push(`${VAR_NAMES[i]} = input("Enter ${VAR_NAMES[i]}:")`);
+         contextParts.push(`<strong>${VAR_NAMES[i]} = ${startVals[i]}</strong>`);
+     } else {
+         lines.push(`${VAR_NAMES[i]} = ${startVals[i]}`);
+     }
+  }
+
+  let context = diff === 'easy' 
+      ? "Trace the following algorithm carefully. Pay attention to loop conditions."
+      : `The user ran the program and entered the following values when prompted: ${contextParts.join(', ')}.`;
+
+  let whileLine = lines.length + 1;
+  lines.push(`while ${VAR_NAMES[0]} < ${limit}`);
+  let printLine = lines.length + 1;
+  lines.push(`  print ${VAR_NAMES[0]}`);
+  
+  let updateCommands = [];
+  for(let i=0; i<numVars-1; i++) {
+      updateCommands.push({
+         lineNum: lines.length + 1,
+         varIdx: i,
+         addsIdx: i+1
+      });
+      lines.push(`  ${VAR_NAMES[i]} = ${VAR_NAMES[i]} + ${VAR_NAMES[i+1]}`);
+  }
+  let endwhileLine = lines.length + 1;
+  lines.push(`endwhile`);
+
+  // Trace the generated code to build the Answers Key
+  let activeVars = VAR_NAMES.slice(0, numVars);
+  let cols = ['Line', ...activeVars, 'Output'];
+  let answers = [];
+  let currentVals = [...startVals];
+
+  // Init block
+  for(let i=0; i<numVars; i++) {
+      let row = { Line: (i+1).toString(), Output: '' };
+      activeVars.forEach(v => row[v] = '');
+      row[VAR_NAMES[i]] = currentVals[i].toString();
+      answers.push(row);
+  }
+
+  // Loop block
+  while(true) {
+      // Condition check line
+      let rowCond = { Line: whileLine.toString(), Output: '' };
+      activeVars.forEach(v => rowCond[v] = '');
+      answers.push(rowCond);
+      
+      if (currentVals[0] >= limit) break; // Condition false
+      
+      // Print line
+      let rowPrint = { Line: printLine.toString(), Output: currentVals[0].toString() };
+      activeVars.forEach(v => rowPrint[v] = '');
+      answers.push(rowPrint);
+      
+      // Update variables lines
+      for(let u of updateCommands) {
+          currentVals[u.varIdx] += currentVals[u.addsIdx];
+          let rowUp = { Line: u.lineNum.toString(), Output: '' };
+          activeVars.forEach(v => rowUp[v] = '');
+          rowUp[VAR_NAMES[u.varIdx]] = currentVals[u.varIdx].toString();
+          answers.push(rowUp);
+      }
+  }
+
+  return { context, code: lines, cols, answers, solved: false, failedAttempt: false };
 }
 
-function generateWhileCounter() {
-  const step = Math.floor(Math.random() * 3) + 2; // 2 to 4
-  const limit = Math.floor(Math.random() * 10) + 10; // 10 to 19
-  const initVal = Math.floor(Math.random() * 5); // 0 to 4
-
-  const lines = [
-    `count = ${initVal}`,
-    `while count < ${limit}`,
-    `  print count`,
-    `  count = count + ${step}`,
-    `endwhile`
-  ];
-
-  const cols = ['Line', 'count', 'Output'];
-  const answers = [];
-  answers.push({Line: '1', count: initVal.toString(), Output: ''});
-  
-  let count = initVal;
-  while(count < limit) {
-    answers.push({Line: '2', count: '', Output: ''}); // True check
-    answers.push({Line: '3', count: '', Output: count.toString()}); // Print
-    count += step;
-    answers.push({Line: '4', count: count.toString(), Output: ''}); // Update
-    answers.push({Line: '5', count: '', Output: ''}); // Endwhile
-  }
-  
-  // [FIX 4] Added final termination condition check tracking row
-  answers.push({Line: '2', count: '', Output: ''}); 
-
-  return { code: lines, cols, answers };
-}
-
-function resetGeneratedPractice() {
-   if(Math.random() < 0.5) genQuestion = generateForAccumulator();
-   else genQuestion = generateWhileCounter();
+function resetGeneratedPractice(isManualReset = false) {
+   genQuestion = generateProceduralAlgorithm();
+   genQuestion.id = 'gen' + genQuestionIdCounter;
+   genQuestion.title = 'Generated Question ' + genQuestionIdCounter;
    
+   if (isManualReset) genQuestionIdCounter++; // Only increment ID if user explicitly generates new
+   
+   document.getElementById('gen-context').innerHTML = genQuestion.context;
    renderPracticeCode('gen-code', genQuestion.code);
    buildStudentTableHtml('gen-table-wrap', 'gen', genQuestion.cols, genQuestion.answers);
    
@@ -625,62 +827,147 @@ function resetGeneratedPractice() {
 
 function checkGeneratedPractice() {
   if(!genQuestion) return;
-  const data = genQuestion;
   const prefix = 'gen';
-  
-  // [FIX 3] Check all generated table rows including extras
-  const totalRows = data.answers.length + EXTRA_ROWS; 
+  const totalRows = genQuestion.answers.length + EXTRA_ROWS; 
   let correct = 0; let total = 0;
 
   for(let r = 0; r < totalRows; r++) {
-    const row = data.answers[r] || {}; 
-    data.cols.forEach(k => {
+    const row = genQuestion.answers[r] || {}; 
+    genQuestion.cols.forEach(k => {
        const td = document.getElementById(`${prefix}-r${r}-${k}`);
        if(!td) return;
-       const input = td.querySelector('input');
        const expected = (row[k] || '').toString().trim().toLowerCase().replace(/\s+/g,' ');
-       const given = input.value.trim().toLowerCase().replace(/\s+/g,' ');
-
+       const given = td.querySelector('input').value.trim().toLowerCase().replace(/\s+/g,' ');
        td.className = '';
        if(given === expected) {
          if(given !== '') td.classList.add('correct');
-         else td.classList.add('correct-show');
          correct++;
-       } else {
-         td.classList.add('wrong');
-       }
+       } else td.classList.add('wrong');
        total++;
     });
   }
+  
+  const isCorrect = (correct === total);
+  recordAttempt(genQuestion.id, genQuestion.title, isCorrect, extractTableData(prefix, genQuestion.cols, totalRows));
+
+  // Update Score & Streaks
+  if (isCorrect) {
+     if (!genQuestion.solved) {
+         genStats.score++;
+         if (!genQuestion.failedAttempt) {
+             genStats.streak++;
+             if(genStats.streak > genStats.maxStreak) genStats.maxStreak = genStats.streak;
+         }
+         genQuestion.solved = true;
+     }
+  } else {
+     if (!genQuestion.solved) {
+         genQuestion.failedAttempt = true;
+         genStats.streak = 0;
+     }
+  }
+  saveProgress();
+  updateStatsUI();
 
   const badge = document.getElementById('gen-result');
-  badge.classList.add('show');
-  if(correct === total) {
-    badge.className = 'result-badge show pass';
-    badge.innerHTML = `✓ Perfect! ${correct}/${total} correct.`;
-  } else {
-    badge.className = 'result-badge show fail';
-    badge.innerHTML = `✗ ${correct}/${total} correct. Check the red cells.`;
-  }
+  badge.className = `result-badge show ${isCorrect ? 'pass' : 'fail'}`;
+  badge.innerHTML = isCorrect ? `✓ Perfect! ${correct}/${total} correct.` : `✗ ${correct}/${total} correct. Check the red cells.`;
 }
 
+// ======================================================
+// MODAL & PDF GENERATION LOGIC
+// ======================================================
+
+function openReportModal() {
+  document.getElementById('report-modal').classList.add('show');
+  document.getElementById('modal-error').style.display = 'none';
+  document.getElementById('student-fname').value = '';
+  document.getElementById('student-lname').value = '';
+  setTimeout(() => document.getElementById('student-fname').focus(), 100);
+}
+
+function closeReportModal() { document.getElementById('report-modal').classList.remove('show'); }
+
+function submitReportModal() {
+  const fname = document.getElementById('student-fname').value.trim();
+  const lname = document.getElementById('student-lname').value.trim();
+  if (!fname || !lname) { document.getElementById('modal-error').style.display = 'block'; return; }
+  closeReportModal();
+  generatePDFReport(fname, lname);
+}
+
+function generatePDFReport(firstName, lastName) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const todayDate = new Date().toLocaleDateString();
+  
+  // Title & Header
+  doc.setFontSize(18);
+  doc.text("Trace Tables Practice Report", 14, 22);
+  doc.setFontSize(12);
+  doc.text(`Student: ${firstName} ${lastName}`, 14, 30);
+  doc.text(`Date: ${todayDate}`, 14, 38);
+  doc.text(`Generator Stats: Score: ${genStats.score} | Max Streak: ${genStats.maxStreak}`, 14, 46);
+  
+  // Page 1: Summary Table
+  const summaryBody = progressData.map(p => {
+    let status = "Not Attempted";
+    if (p.attempts > 0) status = p.correct ? "Correct" : "Incorrect";
+    return [p.title, status, p.attempts.toString()];
+  });
+  
+  doc.autoTable({
+    startY: 55,
+    head: [['Question', 'Status', 'Attempts']],
+    body: summaryBody,
+    theme: 'grid',
+    headStyles: { fillColor: [37, 150, 190] }
+  });
+  
+  // Subsequent Pages: Individual Trace Tables
+  const attemptedQuestions = progressData.filter(p => p.attempts > 0 && p.tableData);
+  if (attemptedQuestions.length > 0) {
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.text("Detailed Trace Tables", 14, 22);
+    let startY = 30;
+    
+    attemptedQuestions.forEach((q) => {
+      if (startY > 250) { doc.addPage(); startY = 20; }
+      doc.setFontSize(14);
+      doc.text(`${q.title} (${q.correct ? 'Correct' : 'Incorrect'})`, 14, startY);
+      doc.autoTable({
+        startY: startY + 5,
+        head: [q.tableData.headers],
+        body: q.tableData.rows,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 150, 190] },
+        margin: { bottom: 20 }
+      });
+      startY = doc.lastAutoTable.finalY + 15;
+    });
+  }
+  
+  doc.save(`Trace_Tables_Report_${firstName}_${lastName}_${todayDate.replace(/\//g, '-')}.pdf`);
+}
 
 // ======================================================
 // INITIALIZATION
 // ======================================================
 window.addEventListener('DOMContentLoaded', () => {
-  // Init Practices
-  renderPracticeCode('prac0-code', pracData[0].code);
-  buildStudentTableHtml('prac0-table-wrap', 'prac0', pracData[0].cols, pracData[0].answers);
+  initProgress();
 
-  renderPracticeCode('prac1-code', pracData[1].code);
-  buildStudentTableHtml('prac1-table-wrap', 'prac1', pracData[1].cols, pracData[1].answers);
+  // Setup Static Practices
+  pracData.forEach((data, i) => {
+     document.getElementById(`prac${i}-context`).innerHTML = data.context;
+     renderPracticeCode(`prac${i}-code`, data.code);
+     buildStudentTableHtml(`prac${i}-table-wrap`, `prac${i}`, data.cols, data.answers);
+     
+     let p = progressData.find(x => x.id === `prac${i}`);
+     if (p && p.tableData) restoreTableState(`prac${i}`, p.tableData);
+  });
 
-  renderPracticeCode('prac2-code', pracData[2].code);
-  buildStudentTableHtml('prac2-table-wrap', 'prac2', pracData[2].cols, pracData[2].answers);
-
-  // Init Generator & Walkthrough
-  resetGeneratedPractice();
+  resetGeneratedPractice(false);
   resetWalk();
 });
 </script>
