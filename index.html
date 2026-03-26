@@ -268,9 +268,10 @@
     <h2>Welcome to Trace Tables</h2>
     <p>A trace table is a reliable technique used to dry-run (test) algorithms manually. It helps ensure no logical errors occur while the program processes data.</p>
     <ul class="info-list">
-      <li><strong>Step-by-step Execution:</strong> You track the state of the program sequentially, exactly as a computer processes each line of code.</li>
-      <li><strong>Variable Tracking:</strong> Only write down a variable's value when it changes or is checked. If it stays the same, leave the cell blank.</li>
-      <li><strong>Loop Conditions:</strong> Remember to track the final condition check that causes a loop to exit (evaluate to false)!</li>
+      <li><strong>OCR J277 Compliant Code:</strong> All code generated on this tool explicitly matches the <em>OCR Exam Reference Language</em> to prepare you for your real exam format.</li>
+      <li><strong>OCR J277 Marking Rule:</strong> In OCR exams, you <strong>only</strong> add a new row to your trace table when a variable changes/is assigned, or if there is an output. </li>
+      <li><strong>Ignore the Fluff:</strong> Do not include lines for condition checks (like <code>while x > 5</code> or <code>if x == 2</code>) or loop markers (like <code>next i</code> or <code>endwhile</code>) unless a variable state is updated on that exact line.</li>
+      <li><strong>Variable Tracking:</strong> Only write down a variable's value when it changes. If it stays the same, leave the cell blank.</li>
     </ul>
     <button class="btn btn-primary mt-4" onclick="showPage('walk', document.getElementById('tab-walk'))">Start Interactive Walkthrough</button>
   </div>
@@ -278,7 +279,7 @@
   <!-- Page 2: Walkthrough -->
   <div id="page-walk" class="page">
     <h2>Interactive Walkthrough</h2>
-    <p>Click "Step Forward" to execute the code line by line and watch how the trace table is populated.</p>
+    <p>Click "Step Forward" to execute the code line by line. Notice how rows are <strong>only added</strong> when a variable updates or an output occurs.</p>
     <div class="controls mb-4">
       <button class="btn active" onclick="selectWalkAlgo(0, this)">For Loop Accumulator</button>
       <button class="btn" onclick="selectWalkAlgo(1, this)">While Loop Countdown</button>
@@ -418,19 +419,19 @@
 
 <script>
 // ======================================================
-// CONSTANTS & DATA
+// CONSTANTS & DATA (OCR STRICT RULES APPLIED)
 // ======================================================
 const EXTRA_ROWS = 2;
 
 // Algorithm 0: For Loop Accumulator
-const algo0Context = "The user ran the program and typed <strong>3</strong> when prompted for the maximum number.";
+const algo0Context = "The user ran the program and typed <strong>3</strong> when prompted for the limit.";
 const algo0Lines = [
   "limit = input(\"Enter limit:\")",
   "total = 0",
   "for i = 1 to limit",
   "  total = total + i",
   "next i",
-  "print total"
+  "print(total)"
 ];
 const algo0Cols = ['Line', 'limit', 'total', 'i', 'Output'];
 const algo0Answers = [
@@ -438,14 +439,10 @@ const algo0Answers = [
   {Line: '2', limit: '', total: '0', i: '', Output: ''},
   {Line: '3', limit: '', total: '', i: '1', Output: ''},
   {Line: '4', limit: '', total: '1', i: '', Output: ''},
-  {Line: '5', limit: '', total: '', i: '', Output: ''},
   {Line: '3', limit: '', total: '', i: '2', Output: ''},
   {Line: '4', limit: '', total: '3', i: '', Output: ''},
-  {Line: '5', limit: '', total: '', i: '', Output: ''},
   {Line: '3', limit: '', total: '', i: '3', Output: ''},
   {Line: '4', limit: '', total: '6', i: '', Output: ''},
-  {Line: '5', limit: '', total: '', i: '', Output: ''},
-  {Line: '3', limit: '', total: '', i: '', Output: ''}, // loop condition fails
   {Line: '6', limit: '', total: '', i: '', Output: '6'}
 ];
 
@@ -454,27 +451,20 @@ const algo1Context = "The program asks the user for a starting number, and they 
 const algo1Lines = [
   "x = input(\"Enter start number:\")",
   "while x > 5",
-  "  print x",
+  "  print(x)",
   "  x = x - 2",
   "endwhile",
-  "print \"Done\""
+  "print(\"Done\")"
 ];
 const algo1Cols = ['Line', 'x', 'Output'];
 const algo1Answers = [
   {Line: '1', x: '10', Output: ''},
-  {Line: '2', x: '', Output: ''}, // True check
   {Line: '3', x: '', Output: '10'},
   {Line: '4', x: '8', Output: ''},
-  {Line: '5', x: '', Output: ''},
-  {Line: '2', x: '', Output: ''}, // True check
   {Line: '3', x: '', Output: '8'},
   {Line: '4', x: '6', Output: ''},
-  {Line: '5', x: '', Output: ''},
-  {Line: '2', x: '', Output: ''}, // True check
   {Line: '3', x: '', Output: '6'},
   {Line: '4', x: '4', Output: ''},
-  {Line: '5', x: '', Output: ''},
-  {Line: '2', x: '', Output: ''}, // False check (terminates)
   {Line: '6', x: '', Output: 'Done'}
 ];
 
@@ -487,25 +477,16 @@ const algo2Lines = [
   "    x = x + i",
   "  endif",
   "next i",
-  "print x"
+  "print(x)"
 ];
 const algo2Cols = ['Line', 'x', 'i', 'Output'];
 const algo2Answers = [
   {Line: '1', x: '5', i: '', Output: ''},
   {Line: '2', x: '', i: '1', Output: ''},
-  {Line: '3', x: '', i: '', Output: ''}, // 1 > 1 False
-  {Line: '6', x: '', i: '', Output: ''},
   {Line: '2', x: '', i: '2', Output: ''},
-  {Line: '3', x: '', i: '', Output: ''}, // 2 > 1 True
   {Line: '4', x: '7', i: '', Output: ''},
-  {Line: '5', x: '', i: '', Output: ''},
-  {Line: '6', x: '', i: '', Output: ''},
   {Line: '2', x: '', i: '3', Output: ''},
-  {Line: '3', x: '', i: '', Output: ''}, // 3 > 1 True
   {Line: '4', x: '10', i: '', Output: ''},
-  {Line: '5', x: '', i: '', Output: ''},
-  {Line: '6', x: '', i: '', Output: ''},
-  {Line: '2', x: '', i: '', Output: ''}, // Loop fails
   {Line: '7', x: '', i: '', Output: '10'}
 ];
 
@@ -518,7 +499,7 @@ const pracData = [
 // ======================================================
 // LOCAL STORAGE & PROGRESS TRACKING
 // ======================================================
-const TODAY_KEY = 'traceTableProgress_v3_' + new Date().toISOString().split('T')[0];
+const TODAY_KEY = 'traceTableProgress_v5_' + new Date().toISOString().split('T')[0];
 let progressData = [];
 let genStats = { score: 0, streak: 0, maxStreak: 0 };
 let genQuestionIdCounter = 1;
@@ -708,7 +689,20 @@ function checkPractice(idx) {
 // PROCEDURAL GENERATOR LOGIC (EASY/MED/HARD/MASTER)
 // ======================================================
 let genQuestion = null;
-const VAR_NAMES = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+// Thematic contexts to make algorithms feel like authentic GCSE questions
+const CONTEXT_BANK = [
+  { theme: "an athletics tournament", vars: ["throws", "dist", "wind", "foul", "bonus", "score"] },
+  { theme: "a football season", vars: ["matches", "goals", "assists", "fouls", "cards", "points"] },
+  { theme: "an esports match", vars: ["round", "kills", "deaths", "assists", "gold", "xp"] },
+  { theme: "a retail store", vars: ["stock", "sold", "price", "tax", "discount", "profit"] },
+  { theme: "student grading", vars: ["students", "score", "bonus", "penalty", "absences", "total"] },
+  { theme: "a racing game", vars: ["laps", "speed", "fuel", "damage", "boost", "time"] },
+  { theme: "a fitness tracker", vars: ["days", "steps", "cals", "water", "sleep", "weight"] },
+  { theme: "a social media post", vars: ["posts", "likes", "shares", "comments", "views", "followers"] },
+  { theme: "a bakery inventory", vars: ["batches", "flour", "sugar", "eggs", "butter", "milk"] },
+  { theme: "a spaceship dashboard", vars: ["orbits", "fuel", "oxygen", "speed", "shield", "power"] }
+];
 
 function generateProceduralAlgorithm() {
   const diff = document.getElementById('gen-difficulty').value;
@@ -718,15 +712,16 @@ function generateProceduralAlgorithm() {
   else if (diff === 'medium') { numVars = 2; numInputs = 1; }
   else if (diff === 'hard') { numVars = 2; numInputs = 2; }
   else if (diff === 'master') {
-      numVars = Math.min(6, 3 + Math.floor(genStats.score / 5)); // Scales up to 6 variables
+      numVars = Math.min(6, 3 + Math.floor(genStats.score / 5)); 
       numInputs = numVars; 
   }
 
-  // Generate safe starting values (1 to 3) to prevent loop explosion
+  const selectedContext = CONTEXT_BANK[Math.floor(Math.random() * CONTEXT_BANK.length)];
+  const VAR_NAMES = selectedContext.vars;
+
   let startVals = [];
   for(let i=0; i<numVars; i++) startVals.push(Math.floor(Math.random() * 3) + 1);
 
-  // Dry run to determine a perfect 'limit' that forces 3-4 loop iterations
   let simVals = [...startVals];
   let targetIterations = 3 + Math.floor(Math.random() * 2); 
   for(let i=0; i<targetIterations; i++) {
@@ -734,7 +729,6 @@ function generateProceduralAlgorithm() {
   }
   let limit = simVals[0]; 
 
-  // Build Context & Code Lines
   let contextParts = [];
   let lines = [];
   
@@ -748,13 +742,13 @@ function generateProceduralAlgorithm() {
   }
 
   let context = diff === 'easy' 
-      ? "Trace the following algorithm carefully. Pay attention to loop conditions."
-      : `The user ran the program and entered the following values when prompted: ${contextParts.join(', ')}.`;
+      ? `Trace this algorithm which calculates abstract stats for ${selectedContext.theme}. Notice how we only add rows for variables changing.`
+      : `A program calculates abstract stats for ${selectedContext.theme}. The user entered the following starting values: ${contextParts.join(', ')}.`;
 
   let whileLine = lines.length + 1;
   lines.push(`while ${VAR_NAMES[0]} < ${limit}`);
   let printLine = lines.length + 1;
-  lines.push(`  print ${VAR_NAMES[0]}`);
+  lines.push(`  print(${VAR_NAMES[0]})`);
   
   let updateCommands = [];
   for(let i=0; i<numVars-1; i++) {
@@ -768,13 +762,12 @@ function generateProceduralAlgorithm() {
   let endwhileLine = lines.length + 1;
   lines.push(`endwhile`);
 
-  // Trace the generated code to build the Answers Key
   let activeVars = VAR_NAMES.slice(0, numVars);
   let cols = ['Line', ...activeVars, 'Output'];
   let answers = [];
   let currentVals = [...startVals];
 
-  // Init block
+  // Init block (Variables assigned)
   for(let i=0; i<numVars; i++) {
       let row = { Line: (i+1).toString(), Output: '' };
       activeVars.forEach(v => row[v] = '');
@@ -784,19 +777,14 @@ function generateProceduralAlgorithm() {
 
   // Loop block
   while(true) {
-      // Condition check line
-      let rowCond = { Line: whileLine.toString(), Output: '' };
-      activeVars.forEach(v => rowCond[v] = '');
-      answers.push(rowCond);
+      if (currentVals[0] >= limit) break; 
       
-      if (currentVals[0] >= limit) break; // Condition false
-      
-      // Print line
+      // Print line (Output produced)
       let rowPrint = { Line: printLine.toString(), Output: currentVals[0].toString() };
       activeVars.forEach(v => rowPrint[v] = '');
       answers.push(rowPrint);
       
-      // Update variables lines
+      // Update variables lines (Variables changed)
       for(let u of updateCommands) {
           currentVals[u.varIdx] += currentVals[u.addsIdx];
           let rowUp = { Line: u.lineNum.toString(), Output: '' };
@@ -814,7 +802,7 @@ function resetGeneratedPractice(isManualReset = false) {
    genQuestion.id = 'gen' + genQuestionIdCounter;
    genQuestion.title = 'Generated Question ' + genQuestionIdCounter;
    
-   if (isManualReset) genQuestionIdCounter++; // Only increment ID if user explicitly generates new
+   if (isManualReset) genQuestionIdCounter++;
    
    document.getElementById('gen-context').innerHTML = genQuestion.context;
    renderPracticeCode('gen-code', genQuestion.code);
@@ -850,7 +838,6 @@ function checkGeneratedPractice() {
   const isCorrect = (correct === total);
   recordAttempt(genQuestion.id, genQuestion.title, isCorrect, extractTableData(prefix, genQuestion.cols, totalRows));
 
-  // Update Score & Streaks
   if (isCorrect) {
      if (!genQuestion.solved) {
          genStats.score++;
@@ -901,7 +888,6 @@ function generatePDFReport(firstName, lastName) {
   const doc = new jsPDF();
   const todayDate = new Date().toLocaleDateString();
   
-  // Title & Header
   doc.setFontSize(18);
   doc.text("Trace Tables Practice Report", 14, 22);
   doc.setFontSize(12);
@@ -909,7 +895,6 @@ function generatePDFReport(firstName, lastName) {
   doc.text(`Date: ${todayDate}`, 14, 38);
   doc.text(`Generator Stats: Score: ${genStats.score} | Max Streak: ${genStats.maxStreak}`, 14, 46);
   
-  // Page 1: Summary Table
   const summaryBody = progressData.map(p => {
     let status = "Not Attempted";
     if (p.attempts > 0) status = p.correct ? "Correct" : "Incorrect";
@@ -924,7 +909,6 @@ function generatePDFReport(firstName, lastName) {
     headStyles: { fillColor: [37, 150, 190] }
   });
   
-  // Subsequent Pages: Individual Trace Tables
   const attemptedQuestions = progressData.filter(p => p.attempts > 0 && p.tableData);
   if (attemptedQuestions.length > 0) {
     doc.addPage();
@@ -957,7 +941,6 @@ function generatePDFReport(firstName, lastName) {
 window.addEventListener('DOMContentLoaded', () => {
   initProgress();
 
-  // Setup Static Practices
   pracData.forEach((data, i) => {
      document.getElementById(`prac${i}-context`).innerHTML = data.context;
      renderPracticeCode(`prac${i}-code`, data.code);
