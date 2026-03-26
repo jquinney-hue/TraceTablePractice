@@ -296,8 +296,11 @@
     <h2>Interactive Walkthrough</h2>
     <p>Click "Step Forward" to execute the code line by line. Notice how rows are <strong>only added</strong> when a variable updates or an output occurs.</p>
     <div class="controls mb-4">
-      <button class="btn active" onclick="selectWalkAlgo(0, this)">For Loop Accumulator</button>
-      <button class="btn" onclick="selectWalkAlgo(1, this)">While Loop Countdown</button>
+      <button class="btn active" onclick="selectWalkAlgo(0, this)">For Loop</button>
+      <button class="btn" onclick="selectWalkAlgo(1, this)">While Loop</button>
+      <button class="btn" onclick="selectWalkAlgo(2, this)">Conditionals</button>
+      <button class="btn" onclick="selectWalkAlgo(3, this)">Do...Until Loop</button>
+      <button class="btn" onclick="selectWalkAlgo(4, this)">Array Iteration</button>
     </div>
     <div class="grid">
       <div>
@@ -323,9 +326,11 @@
     <p>Fill in the tables below. Leave cells blank if the variable doesn't change on that specific line. Progress is automatically saved.</p>
     
     <div class="controls mb-4">
-       <button class="btn active" onclick="showPrac(0, this)">Practice 1</button>
-       <button class="btn" onclick="showPrac(1, this)">Practice 2</button>
-       <button class="btn" onclick="showPrac(2, this)">Practice 3</button>
+       <button class="btn active" onclick="showPrac(0, this)">Practice 1 (For)</button>
+       <button class="btn" onclick="showPrac(1, this)">Practice 2 (While)</button>
+       <button class="btn" onclick="showPrac(2, this)">Practice 3 (If/Else)</button>
+       <button class="btn" onclick="showPrac(3, this)">Practice 4 (Until)</button>
+       <button class="btn" onclick="showPrac(4, this)">Practice 5 (Arrays)</button>
     </div>
 
     <!-- Sub-page: Practice 0 -->
@@ -369,6 +374,36 @@
           <div id="prac2-table-wrap"></div>
           <button class="btn btn-primary mt-4" onclick="checkPractice(2)">Check Answers</button>
           <div id="prac2-result" class="result-badge"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sub-page: Practice 3 (Do...Until) -->
+    <div id="prac3-area" class="prac-area">
+      <div class="grid">
+        <div>
+          <div id="prac3-context" class="context-box"></div>
+          <div id="prac3-code" class="code-container"></div>
+        </div>
+        <div>
+          <div id="prac3-table-wrap"></div>
+          <button class="btn btn-primary mt-4" onclick="checkPractice(3)">Check Answers</button>
+          <div id="prac3-result" class="result-badge"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sub-page: Practice 4 (Arrays) -->
+    <div id="prac4-area" class="prac-area">
+      <div class="grid">
+        <div>
+          <div id="prac4-context" class="context-box"></div>
+          <div id="prac4-code" class="code-container"></div>
+        </div>
+        <div>
+          <div id="prac4-table-wrap"></div>
+          <button class="btn btn-primary mt-4" onclick="checkPractice(4)">Check Answers</button>
+          <div id="prac4-result" class="result-badge"></div>
         </div>
       </div>
     </div>
@@ -505,16 +540,63 @@ const algo2Answers = [
   {Line: '7', x: '', i: '', Output: '10'}
 ];
 
+// Algorithm 3: Do...Until Loop
+const algo3Context = "The user ran the program and entered <strong>3</strong> when prompted for a start number.";
+const algo3Lines = [
+  "start = input(\"Enter start:\")",
+  "do",
+  "  print(start)",
+  "  start = start - 1",
+  "until start == -1",
+  "print(\"Finished\")"
+];
+const algo3Cols = ['Line', 'start', 'Output'];
+const algo3Answers = [
+  {Line: '1', start: '3', Output: ''},
+  {Line: '3', start: '', Output: '3'},
+  {Line: '4', start: '2', Output: ''},
+  {Line: '3', start: '', Output: '2'},
+  {Line: '4', start: '1', Output: ''},
+  {Line: '3', start: '', Output: '1'},
+  {Line: '4', start: '0', Output: ''},
+  {Line: '3', start: '', Output: '0'},
+  {Line: '4', start: '-1', Output: ''},
+  {Line: '6', start: '', Output: 'Finished'}
+];
+
+// Algorithm 4: Arrays
+const algo4Context = "The program processes an array pre-defined as: <strong>actNumbers = [4, 7, 2]</strong>.";
+const algo4Lines = [
+  "count = 0",
+  "for x = 0 to 2",
+  "  count = count + actNumbers[x]",
+  "next x",
+  "print(count)"
+];
+const algo4Cols = ['Line', 'count', 'x', 'Output'];
+const algo4Answers = [
+  {Line: '1', count: '0', x: '', Output: ''},
+  {Line: '2', count: '', x: '0', Output: ''},
+  {Line: '3', count: '4', x: '', Output: ''},
+  {Line: '2', count: '', x: '1', Output: ''},
+  {Line: '3', count: '11', x: '', Output: ''},
+  {Line: '2', count: '', x: '2', Output: ''},
+  {Line: '3', count: '13', x: '', Output: ''},
+  {Line: '5', count: '', x: '', Output: '13'}
+];
+
 const pracData = [
   { context: algo0Context, code: algo0Lines, cols: algo0Cols, answers: algo0Answers },
   { context: algo1Context, code: algo1Lines, cols: algo1Cols, answers: algo1Answers },
-  { context: algo2Context, code: algo2Lines, cols: algo2Cols, answers: algo2Answers }
+  { context: algo2Context, code: algo2Lines, cols: algo2Cols, answers: algo2Answers },
+  { context: algo3Context, code: algo3Lines, cols: algo3Cols, answers: algo3Answers },
+  { context: algo4Context, code: algo4Lines, cols: algo4Cols, answers: algo4Answers }
 ];
 
 // ======================================================
 // LOCAL STORAGE & PROGRESS TRACKING
 // ======================================================
-const TODAY_KEY = 'traceTableProgress_v9_light_' + new Date().toISOString().split('T')[0];
+const TODAY_KEY = 'traceTableProgress_v10_light_' + new Date().toISOString().split('T')[0];
 let progressData = [];
 let genStats = { score: 0, streak: 0, maxStreak: 0 };
 let genQuestionIdCounter = 0;
@@ -538,7 +620,9 @@ function initProgress() {
     progressData = [
       { id: 'prac0', title: 'Practice 1', attempts: 0, correct: false, tableData: null, codeSnippet: null },
       { id: 'prac1', title: 'Practice 2', attempts: 0, correct: false, tableData: null, codeSnippet: null },
-      { id: 'prac2', title: 'Practice 3', attempts: 0, correct: false, tableData: null, codeSnippet: null }
+      { id: 'prac2', title: 'Practice 3', attempts: 0, correct: false, tableData: null, codeSnippet: null },
+      { id: 'prac3', title: 'Practice 4', attempts: 0, correct: false, tableData: null, codeSnippet: null },
+      { id: 'prac4', title: 'Practice 5', attempts: 0, correct: false, tableData: null, codeSnippet: null }
     ];
     saveProgress();
   }
@@ -1146,7 +1230,7 @@ window.addEventListener('keydown', (e) => {
 
 function executeDevAutoFill() {
   if (document.getElementById('page-prac').classList.contains('active')) {
-      for (let i = 0; i <= 2; i++) {
+      for (let i = 0; i <= 4; i++) {
           if (document.getElementById(`prac${i}-area`).classList.contains('active')) {
               devFillTable(`prac${i}`, pracData[i].cols, pracData[i].answers);
               checkPractice(i); 
