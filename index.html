@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trace Tables — GCSE Computer Science</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f7f8;
+    --surface: #ffffff;
+    --surface2: #eaf2fa;
+    --border: #d1d8e0;
+    --accent: #2596be;
+    --accent2: #b31a1c;
+    --accent-dark: #21759B;
+    --text: #2c3e50;
+    --text-dim: #5c6b7a;
+    --text-dimmer: #8ca0b3;
+    --highlight-active: rgba(37, 150, 190, 0.15);
+    --correct: #27ae60;
+    --wrong: #b31a1c;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    margin: 0;
+    padding: 2rem;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 1.5rem;
+  }
+
+  .logo {
+    height: 80px;
+    width: auto;
+  }
+
+  h1 { margin: 0; font-size: 2.2rem; color: var(--accent-dark); }
+  h2 { margin-top: 0; color: var(--accent); font-weight: 500;}
+  p { color: var(--text-dim); }
+
+  /* Navigation Tabs */
+  .tabs { 
+    display: flex; 
+    gap: 1rem; 
+    margin-bottom: 2rem; 
+    border-bottom: 2px solid var(--border); 
+    padding-bottom: 1rem; 
+    overflow-x: auto;
+  }
+  .tab-btn {
+    background: transparent; border: none; color: var(--text-dim);
+    font-size: 1.1rem; font-family: var(--sans); cursor: pointer;
+    padding: 0.6rem 1.2rem; border-radius: 8px; transition: 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { background: var(--surface2); color: var(--text); }
+  .tab-btn.active { 
+    background: var(--surface2); 
+    color: var(--accent-dark); 
+    font-weight: bold; 
+    box-shadow: 0 4px 0 var(--accent2); 
+  }
+
+  .page { display: none; animation: fadeIn 0.3s; }
+  .page.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Buttons */
+  .btn {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-family: var(--sans);
+    font-weight: 500; transition: 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--accent); }
+  .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border: none; box-shadow: 0 2px 4px rgba(37,150,190,0.2); }
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  .controls { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+
+  .mt-4 { margin-top: 1rem; }
+  .mb-4 { margin-bottom: 1rem; }
+
+  /* Code Blocks */
+  .code-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 0;
+    font-family: var(--mono);
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .code-line { display: flex; gap: 1rem; padding: 0.15rem 1rem; border-left: 3px solid transparent; }
+  .code-line.active { background: var(--highlight-active); border-left: 3px solid var(--accent); }
+  .line-num { color: var(--text-dimmer); user-select: none; width: 25px; text-align: right; }
+  .line-code { color: var(--text); white-space: pre; }
+
+  /* Trace Tables */
+  table.trace-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono);
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .trace-table th { 
+    background: var(--accent); 
+    color: #fff; 
+    padding: 0.8rem; 
+    border: 1px solid var(--accent-dark); 
+    font-family: var(--sans);
+  }
+  .trace-table td { border: 1px solid var(--border); text-align: center; height: 3rem;}
+  .trace-table input {
+    width: 100%; height: 100%; box-sizing: border-box; background: transparent;
+    border: none; color: var(--text); text-align: center;
+    font-family: var(--mono); font-size: 1rem; outline: none;
+  }
+  .trace-table input:focus { background: rgba(37,150,190,0.05); }
+  
+  /* Validation Styles */
+  .trace-table td.correct { background: rgba(39, 174, 96, 0.15); box-shadow: inset 0 0 0 2px var(--correct); }
+  .trace-table td.wrong { background: rgba(179, 26, 28, 0.15); box-shadow: inset 0 0 0 2px var(--wrong); }
+  .trace-table td.correct-show { /* Blank extra rows don't need a heavy green background */ }
+
+  .prac-area { display: none; }
+  .prac-area.active { display: block; }
+
+  .result-badge {
+    padding: 1rem; border-radius: 8px; margin-top: 1rem; font-weight: bold; display: none; font-size: 1.1rem;
+  }
+  .result-badge.show { display: block; animation: fadeIn 0.3s; }
+  .result-badge.pass { background: rgba(39, 174, 96, 0.1); color: var(--correct); border: 1px solid var(--correct); }
+  .result-badge.fail { background: rgba(179, 26, 28, 0.1); color: var(--wrong); border: 1px solid var(--wrong); }
+
+  /* Informational Lists */
+  .info-list { margin-top: 1rem; padding-left: 1.5rem; }
+  .info-list li { margin-bottom: 0.8rem; }
+  .info-list strong { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="site-header">
+    <img src="https://cdn.realsmart.co.uk/889bf1be8ce96e4bba59050105a99df2/uploads/2019/03/JHNCC-Crest-Outlined.png" alt="School Logo" class="logo">
+    <div>
+      <h1>Trace Tables</h1>
+      <p>Master algorithm tracing for your Computer Science exams</p>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="tabs">
+    <button id="tab-intro" class="tab-btn active" onclick="showPage('intro', this)">Introduction</button>
+    <button id="tab-walk" class="tab-btn" onclick="showPage('walk', this)">Walkthrough</button>
+    <button id="tab-prac" class="tab-btn" onclick="showPage('prac', this)">Practice</button>
+    <button id="tab-gen" class="tab-btn" onclick="showPage('gen', this)">Auto-Generator</button>
+  </div>
+
+  <!-- Page 1: Intro -->
+  <div id="page-intro" class="page active">
+    <h2>Welcome to Trace Tables</h2>
+    <p>A trace table is a reliable technique used to dry-run (test) algorithms manually. It helps ensure no logical errors occur while the program processes data.</p>
+    <ul class="info-list">
+      <li><strong>Step-by-step Execution:</strong> You track the state of the program sequentially, exactly as a computer processes each line of code.</li>
+      <li><strong>Variable Tracking:</strong> Only write down a variable's value when it changes or is checked. If it stays the same, leave the cell blank.</li>
+      <li><strong>Loop Conditions:</strong> Remember to track the final condition check that causes a loop to exit (evaluate to false)!</li>
+    </ul>
+    <button class="btn btn-primary mt-4" onclick="showPage('walk', document.getElementById('tab-walk'))">Start Interactive Walkthrough</button>
+  </div>
+
+  <!-- Page 2: Walkthrough -->
+  <div id="page-walk" class="page">
+    <h2>Interactive Walkthrough</h2>
+    <p>Click "Step Forward" to execute the code line by line and watch how the trace table is populated.</p>
+    <div class="controls mb-4">
+      <button class="btn active" onclick="selectWalkAlgo(0, this)">For Loop Accumulator</button>
+      <button class="btn" onclick="selectWalkAlgo(1, this)">While Loop Countdown</button>
+    </div>
+    <div class="grid">
+      <div>
+        <div id="walk-code" class="code-container"></div>
+        <div class="controls mt-4">
+          <button class="btn btn-primary" onclick="stepWalk()">Step Forward</button>
+          <button class="btn" onclick="resetWalk()">Restart Trace</button>
+        </div>
+      </div>
+      <div>
+        <table class="trace-table">
+           <thead id="walk-thead"></thead>
+           <tbody id="walk-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 3: Practice -->
+  <div id="page-prac" class="page">
+    <h2>Practice Tracing</h2>
+    <p>Fill in the tables below. Leave cells blank if the variable doesn't change on that specific line.</p>
+    
+    <div class="controls mb-4">
+       <button class="btn active" onclick="showPrac(0, this)">Practice 1</button>
+       <button class="btn" onclick="showPrac(1, this)">Practice 2</button>
+       <button class="btn" onclick="showPrac(2, this)">Practice 3</button>
+    </div>
+
+    <!-- Sub-page: Practice 0 -->
+    <div id="prac0-area" class="prac-area active">
+      <div class="grid">
+        <div id="prac0-code" class="code-container"></div>
+        <div>
+          <div id="prac0-table-wrap"></div>
+          <button class="btn btn-primary mt-4" onclick="checkPractice(0)">Check Answers</button>
+          <div id="prac0-result" class="result-badge"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sub-page: Practice 1 -->
+    <div id="prac1-area" class="prac-area">
+      <div class="grid">
+        <div id="prac1-code" class="code-container"></div>
+        <div>
+          <div id="prac1-table-wrap"></div>
+          <button class="btn btn-primary mt-4" onclick="checkPractice(1)">Check Answers</button>
+          <div id="prac1-result" class="result-badge"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub-page: Practice 2 -->
+    <div id="prac2-area" class="prac-area">
+      <div class="grid">
+        <div id="prac2-code" class="code-container"></div>
+        <div>
+          <div id="prac2-table-wrap"></div>
+          <button class="btn btn-primary mt-4" onclick="checkPractice(2)">Check Answers</button>
+          <div id="prac2-result" class="result-badge"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 4: Generator -->
+  <div id="page-gen" class="page">
+    <h2>Infinite Practice Generator</h2>
+    <p>Automatically generates random pseudocode snippets for you to trace.</p>
+    
+    <div class="grid">
+      <div>
+        <div id="gen-code" class="code-container"></div>
+        <div class="controls mt-4">
+          <button class="btn btn-primary" onclick="checkGeneratedPractice()">Check Answers</button>
+          <button class="btn" onclick="resetGeneratedPractice()">Generate New Question</button>
+        </div>
+      </div>
+      <div>
+        <div id="gen-table-wrap"></div>
+        <div id="gen-result" class="result-badge"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ======================================================
+// CONSTANTS & DATA
+// ======================================================
+const EXTRA_ROWS = 2;
+
+// Algorithm 0: For Loop Accumulator
+const algo0Lines = [
+  "total = 0",
+  "for i = 1 to 3",
+  "  total = total + i",
+  "next i",
+  "print total"
+];
+const algo0Cols = ['Line', 'i', 'total', 'Output'];
+const algo0Answers = [
+  {Line: '1', i: '', total: '0', Output: ''},
+  {Line: '2', i: '1', total: '', Output: ''},
+  {Line: '3', i: '', total: '1', Output: ''},
+  {Line: '4', i: '', total: '', Output: ''},
+  {Line: '2', i: '2', total: '', Output: ''},
+  {Line: '3', i: '', total: '3', Output: ''},
+  {Line: '4', i: '', total: '', Output: ''},
+  {Line: '2', i: '3', total: '', Output: ''},
+  {Line: '3', i: '', total: '6', Output: ''},
+  {Line: '4', i: '', total: '', Output: ''},
+  {Line: '2', i: '', total: '', Output: ''}, // loop condition fails
+  {Line: '5', i: '', total: '', Output: '6'}
+];
+
+// Algorithm 1: While Loop Countdown
+const algo1Lines = [
+  "x = 10",
+  "while x > 5",
+  "  print x",
+  "  x = x - 2",
+  "endwhile",
+  "print \"Done\""
+];
+const algo1Cols = ['Line', 'x', 'Output'];
+const algo1Answers = [
+  {Line: '1', x: '10', Output: ''},
+  {Line: '2', x: '', Output: ''}, // True check
+  {Line: '3', x: '', Output: '10'},
+  {Line: '4', x: '8', Output: ''},
+  {Line: '5', x: '', Output: ''},
+  {Line: '2', x: '', Output: ''}, // True check
+  {Line: '3', x: '', Output: '8'},
+  {Line: '4', x: '6', Output: ''},
+  {Line: '5', x: '', Output: ''},
+  {Line: '2', x: '', Output: ''}, // True check
+  {Line: '3', x: '', Output: '6'},
+  {Line: '4', x: '4', Output: ''},
+  {Line: '5', x: '', Output: ''},
+  {Line: '2', x: '', Output: ''}, // False check (terminates)
+  {Line: '6', x: '', Output: 'Done'}
+];
+
+// Algorithm 2: Conditional Inside Loop
+const algo2Lines = [
+  "x = 5",
+  "for i = 1 to 3",
+  "  if i > 1 then",
+  "    x = x + i",
+  "  endif",
+  "next i",
+  "print x"
+];
+const algo2Cols = ['Line', 'i', 'x', 'Output'];
+const algo2Answers = [
+  {Line: '1', i: '', x: '5', Output: ''},
+  {Line: '2', i: '1', x: '', Output: ''},
+  {Line: '3', i: '', x: '', Output: ''}, // 1 > 1 False
+  {Line: '6', i: '', x: '', Output: ''},
+  {Line: '2', i: '2', x: '', Output: ''},
+  {Line: '3', i: '', x: '', Output: ''}, // 2 > 1 True
+  {Line: '4', i: '', x: '7', Output: ''},
+  {Line: '5', i: '', x: '', Output: ''},
+  {Line: '6', i: '', x: '', Output: ''},
+  {Line: '2', i: '3', x: '', Output: ''},
+  {Line: '3', i: '', x: '', Output: ''}, // 3 > 1 True
+  {Line: '4', i: '', x: '10', Output: ''},
+  {Line: '5', i: '', x: '', Output: ''},
+  {Line: '6', i: '', x: '', Output: ''},
+  {Line: '2', i: '', x: '', Output: ''}, // Loop fails
+  {Line: '7', i: '', x: '', Output: '10'}
+];
+
+const allAlgos = [
+  { code: algo0Lines, cols: algo0Cols, answers: algo0Answers },
+  { code: algo1Lines, cols: algo1Cols, answers: algo1Answers },
+  { code: algo2Lines, cols: algo2Cols, answers: algo2Answers }
+];
+const pracData = allAlgos;
+
+
+// ======================================================
+// NAVIGATION / UI LOGIC
+// ======================================================
+
+// [FIX 1] Removed implicit reliance on window.event, replaced with explict `btn` parameter
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function showPrac(idx, btn) {
+  document.querySelectorAll('#page-prac .prac-area').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#page-prac .controls .btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`prac${idx}-area`).classList.add('active');
+  if(btn) btn.classList.add('active');
+}
+
+function renderPracticeCode(containerId, lines) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = lines.map((ln, i) => `
+    <div class="code-line">
+      <span class="line-num">${i + 1}</span>
+      <span class="line-code">${ln}</span>
+    </div>`).join('');
+}
+
+function buildStudentTableHtml(containerId, prefix, cols, answers) {
+  const el = document.getElementById(containerId);
+  const totalRows = answers.length + EXTRA_ROWS;
+  let html = `<table class="trace-table"><thead><tr>`;
+  cols.forEach(c => html += `<th>${c}</th>`);
+  html += `</tr></thead><tbody>`;
+
+  for(let r = 0; r < totalRows; r++) {
+     html += `<tr>`;
+     cols.forEach(c => {
+        html += `<td id="${prefix}-r${r}-${c}"><input type="text" autocomplete="off"></td>`;
+     });
+     html += `</tr>`;
+  }
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+
+// ======================================================
+// WALKTHROUGH LOGIC
+// ======================================================
+let currentWalkIdx = 0;
+let walkStep = 0;
+
+function selectWalkAlgo(idx, btn) {
+   currentWalkIdx = idx;
+   // [FIX 1] Safely apply active state
+   document.querySelectorAll('#page-walk .controls .btn').forEach(b => b.classList.remove('active'));
+   if(btn) btn.classList.add('active');
+   resetWalk();
+}
+
+function resetWalk() {
+   walkStep = 0;
+   const algo = allAlgos[currentWalkIdx];
+   renderPracticeCode('walk-code', algo.code);
+   
+   const thead = document.getElementById('walk-thead');
+   thead.innerHTML = `<tr>${algo.cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+   document.getElementById('walk-tbody').innerHTML = '';
+}
+
+function stepWalk() {
+   const algo = allAlgos[currentWalkIdx];
+   if(walkStep >= algo.answers.length) return; // Sequence done
+   
+   const stepData = algo.answers[walkStep];
+   
+   // Apply Code Highlighting
+   const lines = document.querySelectorAll('#walk-code .code-line');
+   lines.forEach(l => l.classList.remove('active'));
+   const lineIdx = parseInt(stepData.Line) - 1;
+   if(lines[lineIdx]) lines[lineIdx].classList.add('active');
+   
+   // Construct new Table Row
+   const tbody = document.getElementById('walk-tbody');
+   const tr = document.createElement('tr');
+   algo.cols.forEach(c => {
+     const td = document.createElement('td');
+     td.textContent = stepData[c];
+     if (stepData[c] !== '') td.style.color = 'var(--correct)'; // Highlight new inserts
+     tr.appendChild(td);
+   });
+   tbody.appendChild(tr);
+   
+   // Scroll to bottom of table if needed
+   tr.scrollIntoView({ behavior: 'smooth', block: 'end' });
+   walkStep++;
+}
+
+
+// ======================================================
+// STATIC PRACTICE LOGIC
+// ======================================================
+function checkPractice(idx) {
+  const data = pracData[idx];
+  const prefix = `prac${idx}`;
+  // [FIX 3] Extend validation check up to totalRows to catch extra inputted rows
+  const totalRows = data.answers.length + EXTRA_ROWS;
+  let correct = 0; let total = 0;
+
+  for(let r = 0; r < totalRows; r++) {
+    const row = data.answers[r] || {}; // Use empty object as truth for padding rows
+    
+    data.cols.forEach(k => {
+       const td = document.getElementById(`${prefix}-r${r}-${k}`);
+       if(!td) return;
+       const input = td.querySelector('input');
+       const expected = (row[k] || '').toString().trim().toLowerCase().replace(/\s+/g,' ');
+       const given = input.value.trim().toLowerCase().replace(/\s+/g,' ');
+
+       td.className = ''; // Reset
+       if(given === expected) {
+         if(given !== '') td.classList.add('correct');
+         else td.classList.add('correct-show');
+         correct++;
+       } else {
+         td.classList.add('wrong');
+       }
+       total++;
+    });
+  }
+
+  // Display Feedback
+  const badge = document.getElementById(`${prefix}-result`);
+  badge.classList.add('show');
+  if(correct === total) {
+    badge.className = 'result-badge show pass';
+    badge.innerHTML = `✓ Perfect! ${correct}/${total} correct.`;
+  } else {
+    badge.className = 'result-badge show fail';
+    badge.innerHTML = `✗ ${correct}/${total} correct. Please review the highlighted red cells.`;
+  }
+}
+
+
+// ======================================================
+// AUTO GENERATOR LOGIC
+// ======================================================
+let genQuestion = null;
+
+function generateForAccumulator() {
+  const ops = ['+', '*', '-'];
+  let op = ops[Math.floor(Math.random() * ops.length)];
+  const limit = Math.floor(Math.random() * 4) + 3; // 3 to 6
+  
+  // [FIX 2] Prevent zero multiplier bug by forcing at least 1 when using *
+  let initVal = (op === '*') ? (Math.floor(Math.random() * 5) + 1) : Math.floor(Math.random() * 6);
+  
+  if (op === '*' && limit > 4) op = '+'; // Ensure numbers don't blow up too huge
+
+  const lines = [
+    `val = ${initVal}`,
+    `for k = 1 to ${limit}`,
+    `  val = val ${op} k`,
+    `next k`,
+    `print val`
+  ];
+
+  const cols = ['Line', 'k', 'val', 'Output'];
+  const answers = [];
+  answers.push({Line: '1', k: '', val: initVal.toString(), Output: ''});
+  
+  let currentVal = initVal;
+  for(let k = 1; k <= limit; k++) {
+    answers.push({Line: '2', k: k.toString(), val: '', Output: ''});
+    
+    if (op === '+') currentVal += k;
+    else if (op === '*') currentVal *= k;
+    else if (op === '-') currentVal -= k;
+    
+    answers.push({Line: '3', k: '', val: currentVal.toString(), Output: ''});
+    answers.push({Line: '4', k: '', val: '', Output: ''});
+  }
+  answers.push({Line: '2', k: '', val: '', Output: ''}); // Fails loop condition
+  answers.push({Line: '5', k: '', val: '', Output: currentVal.toString()});
+
+  return { code: lines, cols, answers };
+}
+
+function generateWhileCounter() {
+  const step = Math.floor(Math.random() * 3) + 2; // 2 to 4
+  const limit = Math.floor(Math.random() * 10) + 10; // 10 to 19
+  const initVal = Math.floor(Math.random() * 5); // 0 to 4
+
+  const lines = [
+    `count = ${initVal}`,
+    `while count < ${limit}`,
+    `  print count`,
+    `  count = count + ${step}`,
+    `endwhile`
+  ];
+
+  const cols = ['Line', 'count', 'Output'];
+  const answers = [];
+  answers.push({Line: '1', count: initVal.toString(), Output: ''});
+  
+  let count = initVal;
+  while(count < limit) {
+    answers.push({Line: '2', count: '', Output: ''}); // True check
+    answers.push({Line: '3', count: '', Output: count.toString()}); // Print
+    count += step;
+    answers.push({Line: '4', count: count.toString(), Output: ''}); // Update
+    answers.push({Line: '5', count: '', Output: ''}); // Endwhile
+  }
+  
+  // [FIX 4] Added final termination condition check tracking row
+  answers.push({Line: '2', count: '', Output: ''}); 
+
+  return { code: lines, cols, answers };
+}
+
+function resetGeneratedPractice() {
+   if(Math.random() < 0.5) genQuestion = generateForAccumulator();
+   else genQuestion = generateWhileCounter();
+   
+   renderPracticeCode('gen-code', genQuestion.code);
+   buildStudentTableHtml('gen-table-wrap', 'gen', genQuestion.cols, genQuestion.answers);
+   
+   const badge = document.getElementById('gen-result');
+   badge.className = 'result-badge';
+   badge.innerHTML = '';
+}
+
+function checkGeneratedPractice() {
+  if(!genQuestion) return;
+  const data = genQuestion;
+  const prefix = 'gen';
+  
+  // [FIX 3] Check all generated table rows including extras
+  const totalRows = data.answers.length + EXTRA_ROWS; 
+  let correct = 0; let total = 0;
+
+  for(let r = 0; r < totalRows; r++) {
+    const row = data.answers[r] || {}; 
+    data.cols.forEach(k => {
+       const td = document.getElementById(`${prefix}-r${r}-${k}`);
+       if(!td) return;
+       const input = td.querySelector('input');
+       const expected = (row[k] || '').toString().trim().toLowerCase().replace(/\s+/g,' ');
+       const given = input.value.trim().toLowerCase().replace(/\s+/g,' ');
+
+       td.className = '';
+       if(given === expected) {
+         if(given !== '') td.classList.add('correct');
+         else td.classList.add('correct-show');
+         correct++;
+       } else {
+         td.classList.add('wrong');
+       }
+       total++;
+    });
+  }
+
+  const badge = document.getElementById('gen-result');
+  badge.classList.add('show');
+  if(correct === total) {
+    badge.className = 'result-badge show pass';
+    badge.innerHTML = `✓ Perfect! ${correct}/${total} correct.`;
+  } else {
+    badge.className = 'result-badge show fail';
+    badge.innerHTML = `✗ ${correct}/${total} correct. Check the red cells.`;
+  }
+}
+
+
+// ======================================================
+// INITIALIZATION
+// ======================================================
+window.addEventListener('DOMContentLoaded', () => {
+  // Init Practices
+  renderPracticeCode('prac0-code', pracData[0].code);
+  buildStudentTableHtml('prac0-table-wrap', 'prac0', pracData[0].cols, pracData[0].answers);
+
+  renderPracticeCode('prac1-code', pracData[1].code);
+  buildStudentTableHtml('prac1-table-wrap', 'prac1', pracData[1].cols, pracData[1].answers);
+
+  renderPracticeCode('prac2-code', pracData[2].code);
+  buildStudentTableHtml('prac2-table-wrap', 'prac2', pracData[2].cols, pracData[2].answers);
+
+  // Init Generator & Walkthrough
+  resetGeneratedPractice();
+  resetWalk();
+});
+</script>
+</body>
+</html>
