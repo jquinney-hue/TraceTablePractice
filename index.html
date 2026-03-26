@@ -285,7 +285,7 @@
     <ul class="info-list">
       <li><strong>OCR J277 Compliant Code:</strong> All code generated on this tool explicitly matches the <em>OCR Exam Reference Language</em> to prepare you for your real exam format.</li>
       <li><strong>OCR J277 Marking Rule:</strong> In OCR exams, you <strong>only</strong> add a new row to your trace table when a variable changes/is assigned, or if there is an output. </li>
-      <li><strong>Ignore the Fluff:</strong> Do not include lines for condition checks (like <code>while x > 5</code> or <code>if x == 2</code>) or loop markers (like <code>next i</code> or <code>endwhile</code>) unless a variable state is updated on that exact line.</li>
+      <li><strong>Ignore the Fluff:</strong> Do not include lines for condition checks (like <code>while x > 5</code>, <code>until x == -1</code>, or <code>if x == 2</code>) or loop markers (like <code>next i</code> or <code>endwhile</code>) unless a variable state is updated on that exact line.</li>
       <li><strong>Variable Tracking:</strong> Only write down a variable's value when it changes. If it stays the same, leave the cell blank.</li>
     </ul>
     <button class="btn btn-primary mt-4" onclick="showPage('walk', document.getElementById('tab-walk'))">Start Interactive Walkthrough</button>
@@ -384,8 +384,8 @@
         <select id="gen-difficulty" class="btn" onchange="resetGeneratedPractice()">
           <option value="easy">Easy (0 Inputs)</option>
           <option value="medium">Medium (1 Input)</option>
-          <option value="hard">Hard (2 Inputs)</option>
-          <option value="master">Master (Dynamic)</option>
+          <option value="hard">Hard (Arrays & Inputs)</option>
+          <option value="master">Master (Dynamic & Complex)</option>
         </select>
         <button class="btn btn-primary" onclick="resetGeneratedPractice()">Generate New Question</button>
       </div>
@@ -514,7 +514,7 @@ const pracData = [
 // ======================================================
 // LOCAL STORAGE & PROGRESS TRACKING
 // ======================================================
-const TODAY_KEY = 'traceTableProgress_v8_light_' + new Date().toISOString().split('T')[0];
+const TODAY_KEY = 'traceTableProgress_v9_light_' + new Date().toISOString().split('T')[0];
 let progressData = [];
 let genStats = { score: 0, streak: 0, maxStreak: 0 };
 let genQuestionIdCounter = 0;
@@ -721,91 +721,244 @@ const CONTEXT_BANK = [
 
 function generateProceduralAlgorithm() {
   const diff = document.getElementById('gen-difficulty').value;
-  let numVars = 2, numInputs = 0;
   
-  if (diff === 'easy') { numVars = 2; numInputs = 0; }
-  else if (diff === 'medium') { numVars = 2; numInputs = 1; }
-  else if (diff === 'hard') { numVars = 2; numInputs = 2; }
-  else if (diff === 'master') {
-      numVars = Math.min(6, 3 + Math.floor(genStats.score / 5)); 
-      numInputs = numVars; 
-  }
+  // Decide if this question will feature an array structure (only allowed on Hard/Master)
+  const allowArrays = (diff === 'hard' || diff === 'master');
+  const useArray = allowArrays && Math.random() < 0.35; // 35% chance for arrays
 
   const selectedContext = CONTEXT_BANK[Math.floor(Math.random() * CONTEXT_BANK.length)];
-  const VAR_NAMES = selectedContext.vars;
 
-  let startVals = [];
-  for(let i=0; i<numVars; i++) startVals.push(Math.floor(Math.random() * 3) + 1);
-
-  let simVals = [...startVals];
-  let targetIterations = 3 + Math.floor(Math.random() * 2); 
-  for(let i=0; i<targetIterations; i++) {
-      for(let j=0; j<numVars-1; j++) simVals[j] += simVals[j+1];
+  if (useArray) {
+      return generateArrayAlgorithm(selectedContext, diff);
+  } else {
+      return generateStandardAlgorithm(selectedContext, diff);
   }
-  let limit = simVals[0]; 
+}
 
-  let contextParts = [];
-  let lines = [];
-  
-  for (let i=0; i<numVars; i++) {
-     if (i < numInputs) {
-         lines.push(`${VAR_NAMES[i]} = input("Enter ${VAR_NAMES[i]}:")`);
-         contextParts.push(`<strong>${VAR_NAMES[i]} = ${startVals[i]}</strong>`);
-     } else {
-         lines.push(`${VAR_NAMES[i]} = ${startVals[i]}`);
-     }
-  }
+function generateArrayAlgorithm(contextData, diff) {
+    const arrName = contextData.vars[0] + "Data"; // e.g., throwsData
+    const accName = contextData.vars[1]; // e.g., dist
+    const loopVar = "x";
 
-  let context = diff === 'easy' 
-      ? `Trace this algorithm which calculates abstract stats for ${selectedContext.theme}. Notice how we only add rows for variables changing.`
-      : `A program calculates abstract stats for ${selectedContext.theme}. The user entered the following starting values: ${contextParts.join(', ')}.`;
+    let arrLen = diff === 'master' ? 4 : 3;
+    let arrVals = [];
+    for(let i=0; i<arrLen; i++) arrVals.push(Math.floor(Math.random() * 5) + 1);
 
-  let whileLine = lines.length + 1;
-  lines.push(`while ${VAR_NAMES[0]} < ${limit}`);
-  let printLine = lines.length + 1;
-  lines.push(`  print(${VAR_NAMES[0]})`);
-  
-  let updateCommands = [];
-  for(let i=0; i<numVars-1; i++) {
-      updateCommands.push({
-         lineNum: lines.length + 1,
-         varIdx: i,
-         addsIdx: i+1
-      });
-      lines.push(`  ${VAR_NAMES[i]} = ${VAR_NAMES[i]} + ${VAR_NAMES[i+1]}`);
-  }
-  let endwhileLine = lines.length + 1;
-  lines.push(`endwhile`);
+    let lines = [];
+    let context = `The program processes an array of ${contextData.theme}. The array is pre-defined as: <strong>${arrName} = [${arrVals.join(', ')}]</strong>.`;
 
-  let activeVars = VAR_NAMES.slice(0, numVars);
-  let cols = ['Line', ...activeVars, 'Output'];
-  let answers = [];
-  let currentVals = [...startVals];
+    lines.push(`${accName} = 0`);
 
-  for(let i=0; i<numVars; i++) {
-      let row = { Line: (i+1).toString(), Output: '' };
-      activeVars.forEach(v => row[v] = '');
-      row[VAR_NAMES[i]] = currentVals[i].toString();
-      answers.push(row);
-  }
+    // Array iteration using either For or While loop
+    const loopType = Math.random() < 0.5 ? 'for' : 'while';
 
-  while(true) {
-      if (currentVals[0] >= limit) break; 
-      
-      let rowPrint = { Line: printLine.toString(), Output: currentVals[0].toString() };
-      activeVars.forEach(v => rowPrint[v] = '');
-      answers.push(rowPrint);
-      
-      for(let u of updateCommands) {
-          currentVals[u.varIdx] += currentVals[u.addsIdx];
-          let rowUp = { Line: u.lineNum.toString(), Output: '' };
-          activeVars.forEach(v => rowUp[v] = '');
-          rowUp[VAR_NAMES[u.varIdx]] = currentVals[u.varIdx].toString();
-          answers.push(rowUp);
-      }
-  }
+    let cols = ['Line', accName, loopVar, 'Output'];
+    let answers = [];
 
-  return { context, code: lines, cols, answers, solved: false, failedAttempt: false };
+    answers.push({ Line: '1', [accName]: '0', [loopVar]: '', Output: '' });
+    let currentAcc = 0;
+
+    if (loopType === 'for') {
+        lines.push(`for ${loopVar} = 0 to ${arrLen - 1}`);
+        lines.push(`  ${accName} = ${accName} + ${arrName}[${loopVar}]`);
+        lines.push(`next ${loopVar}`);
+        lines.push(`print(${accName})`);
+
+        for (let i = 0; i < arrLen; i++) {
+            answers.push({ Line: '2', [accName]: '', [loopVar]: i.toString(), Output: '' });
+            currentAcc += arrVals[i];
+            answers.push({ Line: '3', [accName]: currentAcc.toString(), [loopVar]: '', Output: '' });
+        }
+        answers.push({ Line: '5', [accName]: '', [loopVar]: '', Output: currentAcc.toString() });
+    } else {
+        lines.push(`${loopVar} = 0`);
+        lines.push(`while ${loopVar} < ${arrLen}`);
+        lines.push(`  ${accName} = ${accName} + ${arrName}[${loopVar}]`);
+        lines.push(`  ${loopVar} = ${loopVar} + 1`);
+        lines.push(`endwhile`);
+        lines.push(`print(${accName})`);
+
+        answers.push({ Line: '2', [accName]: '', [loopVar]: '0', Output: '' });
+        for (let i = 0; i < arrLen; i++) {
+            currentAcc += arrVals[i];
+            answers.push({ Line: '4', [accName]: currentAcc.toString(), [loopVar]: '', Output: '' });
+            answers.push({ Line: '5', [accName]: '', [loopVar]: (i + 1).toString(), Output: '' });
+        }
+        answers.push({ Line: '7', [accName]: '', [loopVar]: '', Output: currentAcc.toString() });
+    }
+
+    return { context, code: lines, cols, answers, solved: false, failedAttempt: false };
+}
+
+function generateStandardAlgorithm(contextData, diff) {
+    let numVars = 2, numInputs = 0;
+    if (diff === 'easy') { numVars = 2; numInputs = 0; }
+    else if (diff === 'medium') { numVars = 2; numInputs = 1; }
+    else if (diff === 'hard') { numVars = 2; numInputs = 2; }
+    else if (diff === 'master') { 
+        numVars = Math.min(4, 2 + Math.floor(genStats.score / 5)); // Capped at 4 vars to prevent massive scrolling
+        numInputs = numVars - 1; 
+    }
+
+    const VAR_NAMES = contextData.vars;
+    let startVals = [];
+    for(let i=0; i<numVars; i++) startVals.push(Math.floor(Math.random() * 3) + 1);
+
+    let loopTypes = ['for', 'while', 'do-until'];
+    let loopType = loopTypes[Math.floor(Math.random() * loopTypes.length)];
+
+    let isCountdown = loopType !== 'for' && Math.random() < 0.5; // Do-Until and While can count downwards
+    
+    if (isCountdown) {
+        startVals[0] = Math.floor(Math.random() * 10) + 15; // Set a high starting point to subtract from
+    }
+
+    let targetIterations = 3 + Math.floor(Math.random() * 2); // 3-4 loops
+
+    // Precisely simulate loop math to find target limit without logical errors
+    let simVals = [...startVals];
+    for(let iter=0; iter<targetIterations; iter++) {
+        for(let j=0; j<numVars-1; j++) {
+            if (isCountdown) simVals[j] -= simVals[j+1];
+            else simVals[j] += simVals[j+1];
+        }
+    }
+    let limit = simVals[0]; 
+
+    let contextParts = [];
+    let lines = [];
+    
+    // Initialise Variables
+    for (let i=0; i<numVars; i++) {
+       if (i < numInputs) {
+           lines.push(`${VAR_NAMES[i]} = input("Enter ${VAR_NAMES[i]}:")`);
+           contextParts.push(`<strong>${VAR_NAMES[i]} = ${startVals[i]}</strong>`);
+       } else {
+           lines.push(`${VAR_NAMES[i]} = ${startVals[i]}`);
+       }
+    }
+
+    let activeVars = VAR_NAMES.slice(0, numVars);
+    if (loopType === 'for') activeVars.push('i'); 
+
+    let cols = ['Line', ...activeVars, 'Output'];
+    let answers = [];
+    let currentVals = [...startVals];
+
+    for(let i=0; i<numVars; i++) {
+        let row = { Line: (i+1).toString(), Output: '' };
+        activeVars.forEach(v => row[v] = '');
+        row[VAR_NAMES[i]] = currentVals[i].toString();
+        answers.push(row);
+    }
+
+    let context = diff === 'easy' 
+        ? `Trace this algorithm which calculates abstract stats for ${contextData.theme}.`
+        : `A program calculates abstract stats for ${contextData.theme}. The user entered the following starting values: ${contextParts.join(', ')}.`;
+
+    let loopStartLine = lines.length + 1;
+
+    // Build the Loop Blocks
+    if (loopType === 'for') {
+        lines.push(`for i = 1 to ${targetIterations}`);
+        lines.push(`  print(${VAR_NAMES[0]})`);
+        
+        let updateCommands = [];
+        for(let i=0; i<numVars-1; i++) {
+            updateCommands.push({ lineNum: lines.length + 1, varIdx: i, addsIdx: i+1 });
+            lines.push(`  ${VAR_NAMES[i]} = ${VAR_NAMES[i]} + ${VAR_NAMES[i+1]}`);
+        }
+        lines.push(`next i`);
+
+        for(let iter=1; iter<=targetIterations; iter++) {
+            let rowI = { Line: loopStartLine.toString(), Output: '' };
+            activeVars.forEach(v => rowI[v] = '');
+            rowI['i'] = iter.toString();
+            answers.push(rowI);
+
+            let rowPrint = { Line: (loopStartLine + 1).toString(), Output: currentVals[0].toString() };
+            activeVars.forEach(v => rowPrint[v] = '');
+            answers.push(rowPrint);
+            
+            for(let u of updateCommands) {
+                currentVals[u.varIdx] += currentVals[u.addsIdx];
+                let rowUp = { Line: u.lineNum.toString(), Output: '' };
+                activeVars.forEach(v => rowUp[v] = '');
+                rowUp[VAR_NAMES[u.varIdx]] = currentVals[u.varIdx].toString();
+                answers.push(rowUp);
+            }
+        }
+
+    } else if (loopType === 'while') {
+        let op = isCountdown ? '>' : '<';
+        lines.push(`while ${VAR_NAMES[0]} ${op} ${limit}`);
+        lines.push(`  print(${VAR_NAMES[0]})`);
+        
+        let updateCommands = [];
+        for(let i=0; i<numVars-1; i++) {
+            updateCommands.push({ lineNum: lines.length + 1, varIdx: i, addsIdx: i+1 });
+            let mathOp = isCountdown ? '-' : '+';
+            lines.push(`  ${VAR_NAMES[i]} = ${VAR_NAMES[i]} ${mathOp} ${VAR_NAMES[i+1]}`);
+        }
+        lines.push(`endwhile`);
+        lines.push(`print("Finished")`);
+
+        while(true) {
+            if (isCountdown ? currentVals[0] <= limit : currentVals[0] >= limit) break;
+            
+            let rowPrint = { Line: (loopStartLine + 1).toString(), Output: currentVals[0].toString() };
+            activeVars.forEach(v => rowPrint[v] = '');
+            answers.push(rowPrint);
+            
+            for(let u of updateCommands) {
+                if(isCountdown) currentVals[u.varIdx] -= currentVals[u.addsIdx];
+                else currentVals[u.varIdx] += currentVals[u.addsIdx];
+                
+                let rowUp = { Line: u.lineNum.toString(), Output: '' };
+                activeVars.forEach(v => rowUp[v] = '');
+                rowUp[VAR_NAMES[u.varIdx]] = currentVals[u.varIdx].toString();
+                answers.push(rowUp);
+            }
+        }
+        let rowFin = { Line: lines.length.toString(), Output: 'Finished' };
+        activeVars.forEach(v => rowFin[v] = '');
+        answers.push(rowFin);
+
+    } else if (loopType === 'do-until') {
+        lines.push(`do`);
+        lines.push(`  print(${VAR_NAMES[0]})`);
+        
+        let updateCommands = [];
+        for(let i=0; i<numVars-1; i++) {
+            updateCommands.push({ lineNum: lines.length + 1, varIdx: i, addsIdx: i+1 });
+            let mathOp = isCountdown ? '-' : '+';
+            lines.push(`  ${VAR_NAMES[i]} = ${VAR_NAMES[i]} ${mathOp} ${VAR_NAMES[i+1]}`);
+        }
+        lines.push(`until ${VAR_NAMES[0]} == ${limit}`);
+        lines.push(`print("Finished")`);
+
+        while(true) {
+            let rowPrint = { Line: (loopStartLine + 1).toString(), Output: currentVals[0].toString() };
+            activeVars.forEach(v => rowPrint[v] = '');
+            answers.push(rowPrint);
+            
+            for(let u of updateCommands) {
+                if (isCountdown) currentVals[u.varIdx] -= currentVals[u.addsIdx];
+                else currentVals[u.varIdx] += currentVals[u.addsIdx];
+                
+                let rowUp = { Line: u.lineNum.toString(), Output: '' };
+                activeVars.forEach(v => rowUp[v] = '');
+                rowUp[VAR_NAMES[u.varIdx]] = currentVals[u.varIdx].toString();
+                answers.push(rowUp);
+            }
+            if (currentVals[0] === limit) break; // Check exit condition
+        }
+        let rowFin = { Line: lines.length.toString(), Output: 'Finished' };
+        activeVars.forEach(v => rowFin[v] = '');
+        answers.push(rowFin);
+    }
+
+    return { context, code: lines, cols, answers, solved: false, failedAttempt: false };
 }
 
 function resetGeneratedPractice() {
@@ -984,35 +1137,33 @@ window.addEventListener('keydown', (e) => {
       devCodeBuffer += e.key.toUpperCase();
       if (devCodeBuffer.endsWith("DEV")) {
           executeDevAutoFill();
-          devCodeBuffer = ""; // Reset buffer after execution
+          devCodeBuffer = ""; 
       }
   } else if (!e.shiftKey) {
-      devCodeBuffer = ""; // Reset if shift is released
+      devCodeBuffer = ""; 
   }
 });
 
 function executeDevAutoFill() {
-  // Check if Practice Page is active
   if (document.getElementById('page-prac').classList.contains('active')) {
       for (let i = 0; i <= 2; i++) {
           if (document.getElementById(`prac${i}-area`).classList.contains('active')) {
               devFillTable(`prac${i}`, pracData[i].cols, pracData[i].answers);
-              checkPractice(i); // Auto submit
+              checkPractice(i); 
               return;
           }
       }
   }
-  // Check if Generator Page is active
   else if (document.getElementById('page-gen').classList.contains('active') && genQuestion) {
       devFillTable('gen', genQuestion.cols, genQuestion.answers);
-      checkGeneratedPractice(); // Auto submit
+      checkGeneratedPractice(); 
   }
 }
 
 function devFillTable(prefix, cols, answers) {
   const totalRows = answers.length + EXTRA_ROWS;
   for(let r = 0; r < totalRows; r++) {
-      const row = answers[r] || {}; // empty for extra rows
+      const row = answers[r] || {}; 
       cols.forEach(k => {
           const td = document.getElementById(`${prefix}-r${r}-${k}`);
           if (td && td.querySelector('input')) {
